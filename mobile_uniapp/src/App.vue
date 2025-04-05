@@ -79,7 +79,7 @@ onHide(() => {
 
 <style lang="scss">
 /* 导入所有外部样式表 */
-@import './uni.scss';
+
 @import './static/icons.css';
 @import './static/iconfont.css';
 

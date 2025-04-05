@@ -59,14 +59,14 @@
 			{
 				"pagePath": "pages/index/index",
 				"text": "首页",
-				"iconPath": "static/tabbar/home.svg",
-				"selectedIconPath": "static/tabbar/home-active.svg"
+				"iconPath": "static/tabbar/home.png",
+				"selectedIconPath": "static/tabbar/home-active.png"
 			},
 			{
 				"pagePath": "pages/user/index",
 				"text": "我的",
-				"iconPath": "static/tabbar/user.svg",
-				"selectedIconPath": "static/tabbar/user-active.svg"
+				"iconPath": "static/tabbar/user.png",
+				"selectedIconPath": "static/tabbar/user-active.png"
 			}
 		]
 	},

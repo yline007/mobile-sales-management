@@ -27,7 +27,7 @@ function setupRouterInterceptor() {
   };
 
   // 拦截 navigateTo 方法
-  uni.navigateTo = (options) => {
+  uni.navigateTo = (options: UniApp.NavigateToOptions) => {
     const url = options.url;
     const pageUrl = url.split('?')[0]; // 去掉参数
     
@@ -49,7 +49,7 @@ function setupRouterInterceptor() {
   };
 
   // 拦截 redirectTo 方法
-  uni.redirectTo = (options) => {
+  uni.redirectTo = (options: UniApp.RedirectToOptions) => {
     const url = options.url;
     const pageUrl = url.split('?')[0]; // 去掉参数
     
@@ -71,7 +71,7 @@ function setupRouterInterceptor() {
   };
 
   // 拦截 reLaunch 方法 
-  uni.reLaunch = (options) => {
+  uni.reLaunch = (options: UniApp.ReLaunchOptions) => {
     const url = options.url;
     const pageUrl = url.split('?')[0]; // 去掉参数
     
@@ -93,7 +93,7 @@ function setupRouterInterceptor() {
   };
 
   // 拦截 switchTab 方法
-  uni.switchTab = (options) => {
+  uni.switchTab = (options: UniApp.SwitchTabOptions) => {
     const url = options.url;
     const pageUrl = url.split('?')[0]; // 去掉参数
     
