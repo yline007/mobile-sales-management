@@ -10,6 +10,8 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // 配置打包后的资源路径为相对路径
+  base: './',
   server: {
     proxy: {
       '/api': {

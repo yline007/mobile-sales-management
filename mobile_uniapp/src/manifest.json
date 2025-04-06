@@ -65,8 +65,25 @@
     "mp-toutiao" : {
         "usingComponents" : true
     },
-    "uniStatistics": {  
-        "enable": false
+    /* H5特有相关 */
+    "h5" : {
+        "title" : "移动销售记录管理系统",
+        "template" : "index.html",
+        "router" : {
+            "mode" : "hash",
+            "base" : "/h5/"
+        },
+        "optimization" : {
+            "treeShaking" : {
+                "enable" : true
+            }
+        },
+        "devServer" : {
+            "port" : 8080
+        }
+    },
+    "uniStatistics" : {
+        "enable" : false
     },
     "vueVersion" : "3"
 }
