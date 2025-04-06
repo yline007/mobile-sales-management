@@ -95,25 +95,6 @@
                 </el-card>
             </el-col>
         </el-row>
-
-        <!-- 最新销售记录 -->
-        <el-card shadow="hover" class="border-0 rounded-lg mt-5">
-            <template #header>
-                <div class="flex justify-between items-center">
-                    <span class="text-gray-600 font-medium">最新销售记录</span>
-                    <el-button type="primary" link @click="viewAllRecords">查看全部</el-button>
-                </div>
-            </template>
-            <el-table :data="latestSalesRecords" stripe style="width: 100%">
-                <el-table-column prop="id" label="ID" width="80"></el-table-column>
-                <el-table-column prop="storeName" label="门店"></el-table-column>
-                <el-table-column prop="salesperson" label="销售员"></el-table-column>
-                <el-table-column prop="phoneModel" label="手机型号"></el-table-column>
-                <el-table-column prop="imei" label="串码" width="180"></el-table-column>
-                <el-table-column prop="customerName" label="客户姓名"></el-table-column>
-                <el-table-column prop="createTime" label="销售时间" width="180"></el-table-column>
-            </el-table>
-        </el-card>
     </div>
 </template>
 
@@ -131,15 +112,6 @@ const todaySalesCount = ref(36)
 const storeTotalCount = ref(4)
 const salespersonTotalCount = ref(12)
 const monthSalesAmount = ref(189650)
-
-// 最新销售记录
-const latestSalesRecords = ref([
-    { id: 1, storeName: '总店', salesperson: '张三', phoneModel: 'iPhone 15', imei: 'IMEI123456789', customerName: '王先生', createTime: '2023-12-01 10:30:45' },
-    { id: 2, storeName: '北京店', salesperson: '李四', phoneModel: 'HUAWEI P60', imei: 'IMEI987654321', customerName: '李女士', createTime: '2023-12-01 09:15:22' },
-    { id: 3, storeName: '上海店', salesperson: '王五', phoneModel: 'Xiaomi 14', imei: 'IMEI456789123', customerName: '张先生', createTime: '2023-12-01 08:45:10' },
-    { id: 4, storeName: '广州店', salesperson: '赵六', phoneModel: 'vivo X100', imei: 'IMEI789123456', customerName: '刘女士', createTime: '2023-11-30 17:30:25' },
-    { id: 5, storeName: '总店', salesperson: '张三', phoneModel: 'iPhone 14', imei: 'IMEI321654987', customerName: '陈先生', createTime: '2023-11-30 16:22:18' }
-])
 
 // 获取仪表盘数据
 const fetchDashboardData = async () => {
@@ -264,11 +236,6 @@ const initStoreChart = () => {
             }
         ]
     })
-}
-
-// 查看全部销售记录
-const viewAllRecords = () => {
-    router.push('/admin/sales/list')
 }
 
 onMounted(() => {
