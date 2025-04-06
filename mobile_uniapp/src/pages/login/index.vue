@@ -12,7 +12,7 @@
         <text class="label">手机号码</text>
         <view class="input-box">
           <uni-icons type="phone" size="20" color="#999"></uni-icons>
-          <input type="text" v-model="form.phone" placeholder="请输入手机号码" maxlength="11" />
+          <input type="number" v-model="form.phone" placeholder="请输入手机号码" maxlength="11" />
         </view>
       </view>
       
@@ -55,6 +55,15 @@ const handleLogin = () => {
   if (!form.phone.trim()) {
     uni.showToast({
       title: '请输入手机号码',
+      icon: 'none'
+    });
+    return;
+  }
+  
+  // 验证手机号格式
+  if (!/^1[3-9]\d{9}$/.test(form.phone)) {
+    uni.showToast({
+      title: '请输入正确的手机号码',
       icon: 'none'
     });
     return;
@@ -115,6 +124,10 @@ const handleLogin = () => {
 
 // 使用测试账号登录
 const handleTestLogin = () => {
+  // 设置测试账号
+  form.phone = '13800138000';
+  form.password = '123456';
+  
   // 模拟登录过程
   uni.showLoading({
     title: '登录中...'

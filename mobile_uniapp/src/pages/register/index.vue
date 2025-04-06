@@ -20,20 +20,7 @@
         <text class="label">手机号码</text>
         <view class="input-box">
           <uni-icons type="phone" size="20" color="#999"></uni-icons>
-          <input type="text" v-model="form.phone" placeholder="请输入手机号码" maxlength="11" />
-        </view>
-      </view>
-      
-      <view class="input-group">
-        <text class="label">验证码</text>
-        <view class="code-input-box">
-          <view class="input-box code-input">
-            <uni-icons type="locked" size="20" color="#999"></uni-icons>
-            <input type="text" v-model="form.code" placeholder="请输入验证码" maxlength="6" />
-          </view>
-          <button class="code-btn" :disabled="codeCountdown > 0" @click="sendCode">
-            {{codeCountdown > 0 ? `${codeCountdown}秒后重发` : '获取验证码'}}
-          </button>
+          <input type="number" v-model="form.phone" placeholder="请输入手机号码" maxlength="11" />
         </view>
       </view>
       
@@ -64,56 +51,16 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { reactive } from 'vue';
 import { register } from '@/api/user';
 
 // 表单数据
 const form = reactive({
   name: '',
   phone: '',
-  code: '',
   password: '',
   confirmPassword: ''
 });
-
-// 验证码倒计时
-const codeCountdown = ref(0);
-
-// 发送验证码
-const sendCode = () => {
-  if (!form.phone.trim()) {
-    uni.showToast({
-      title: '请输入手机号码',
-      icon: 'none'
-    });
-    return;
-  }
-  
-  if (!/^1\d{10}$/.test(form.phone)) {
-    uni.showToast({
-      title: '手机号格式不正确',
-      icon: 'none'
-    });
-    return;
-  }
-  
-  // 开始倒计时
-  codeCountdown.value = 60;
-  
-  // 模拟发送验证码
-  uni.showToast({
-    title: '验证码已发送',
-    icon: 'success'
-  });
-  
-  // 倒计时
-  const timer = setInterval(() => {
-    codeCountdown.value--;
-    if (codeCountdown.value <= 0) {
-      clearInterval(timer);
-    }
-  }, 1000);
-};
 
 // 注册处理
 const handleRegister = () => {
@@ -134,9 +81,10 @@ const handleRegister = () => {
     return;
   }
   
-  if (!form.code.trim()) {
+  // 验证手机号格式
+  if (!/^1[3-9]\d{9}$/.test(form.phone)) {
     uni.showToast({
-      title: '请输入验证码',
+      title: '请输入正确的手机号码',
       icon: 'none'
     });
     return;
@@ -163,23 +111,41 @@ const handleRegister = () => {
     title: '注册中...'
   });
   
-  // 模拟注册请求，正常应该调用API
-  setTimeout(() => {
+  // 调用注册API
+  register({
+    name: form.name,
+    phone: form.phone,
+    password: form.password
+  }).then((res: any) => {
+    uni.hideLoading();
+    
+    if (res.code === 200) {
+      uni.showToast({
+        title: '注册成功',
+        icon: 'success',
+        duration: 2000,
+        success: () => {
+          // 注册成功后跳转到登录页
+          setTimeout(() => {
+            uni.navigateTo({
+              url: '/pages/login/index'
+            });
+          }, 2000);
+        }
+      });
+    } else {
+      uni.showToast({
+        title: res.message || '注册失败',
+        icon: 'none'
+      });
+    }
+  }).catch(() => {
     uni.hideLoading();
     uni.showToast({
-      title: '注册成功',
-      icon: 'success',
-      duration: 2000,
-      success: () => {
-        // 注册成功后跳转到登录页
-        setTimeout(() => {
-          uni.navigateTo({
-            url: '/pages/login/index'
-          });
-        }, 2000);
-      }
+      title: '注册失败，请稍后再试',
+      icon: 'none'
     });
-  }, 1500);
+  });
 };
 
 // 跳转到登录页
@@ -204,8 +170,8 @@ const goToLogin = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 60rpx;
-  margin-top: 20rpx;
+  margin-bottom: 80rpx;
+  margin-top: 80rpx;
 }
 
 .logo-icon {
@@ -264,33 +230,6 @@ const goToLogin = () => {
   padding: 0;
 }
 
-.code-input-box {
-  display: flex;
-  align-items: center;
-}
-
-.code-input {
-  flex: 1;
-  margin-right: 20rpx;
-}
-
-.code-btn {
-  width: 220rpx;
-  height: 80rpx;
-  line-height: 80rpx;
-  font-size: 26rpx;
-  background-color: #2979ff;
-  color: #fff;
-  border-radius: 10rpx;
-  padding: 0;
-  margin: 0;
-}
-
-.code-btn[disabled] {
-  background-color: #cccccc;
-  color: #ffffff;
-}
-
 .submit-btn {
   margin-top: 50rpx;
   height: 90rpx;
@@ -302,15 +241,15 @@ const goToLogin = () => {
 }
 
 .login-link {
-  display: flex;
-  justify-content: center;
   margin-top: 30rpx;
-  font-size: 26rpx;
+  text-align: center;
+  font-size: 28rpx;
   color: #666;
 }
 
 .link {
   color: #2979ff;
+  display: inline-block;
   margin-left: 10rpx;
 }
 </style> 

@@ -16,15 +16,24 @@
       <!-- 销售人 -->
       <view class="form-item">
         <text class="form-label">销售人</text>
-        <input class="form-input" v-model="formData.salesPerson" placeholder="请输入销售员姓名" />
+        <input class="form-input" v-model="formData.salesPerson" placeholder="请输入销售员姓名" disabled />
       </view>
       
-      <!-- 手机型号 -->
+      <!-- 手机品牌和型号 -->
+      <view class="form-item">
+        <text class="form-label">手机品牌</text>
+        <view class="form-input-wrap">
+          <picker mode="selector" :range="phoneBrandList" @change="handleBrandChange" class="form-picker">
+            <view class="picker-view">{{ formData.phoneBrand || '请选择手机品牌' }}</view>
+          </picker>
+        </view>
+      </view>
+      
       <view class="form-item">
         <text class="form-label">手机型号</text>
         <view class="form-input-wrap">
           <input v-if="!showModelSelect" class="form-input" v-model="formData.phoneModel" placeholder="请输入或选择手机型号" />
-          <picker v-else mode="selector" :range="phoneModelList" @change="handleModelChange" class="form-picker">
+          <picker v-else mode="selector" :range="filteredPhoneModels" @change="handleModelChange" class="form-picker">
             <view class="picker-view">{{ formData.phoneModel || '请选择手机型号' }}</view>
           </picker>
           <text class="select-toggle" @click="showModelSelect = !showModelSelect">{{ showModelSelect ? '手动' : '选择' }}</text>
@@ -57,7 +66,7 @@
       
       <!-- 拍照上传 -->
       <view class="form-item">
-        <text class="form-label">凭证照片</text>
+        <text class="form-label">手机照片</text>
         <view class="upload-area">
           <view v-if="formData.photos.length === 0" class="upload-btn" @click="chooseImage">
             <uni-icons type="camera" size="32" color="#999"></uni-icons>
@@ -68,7 +77,7 @@
               <image :src="photo" mode="aspectFill" class="preview-image" @click="previewImage(index)"></image>
               <text class="delete-btn" @click.stop="deleteImage(index)">×</text>
             </view>
-            <view v-if="formData.photos.length < 3" class="upload-btn small" @click="chooseImage">
+            <view v-if="formData.photos.length < 6" class="upload-btn small" @click="chooseImage">
               <uni-icons type="camera" size="24" color="#999"></uni-icons>
             </view>
           </view>
@@ -87,7 +96,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import { onShow, onLoad } from '@dcloudio/uni-app';
 import { isLoggedIn } from '@/utils/auth';
 import { submitRecord } from '@/api/record';
@@ -96,6 +105,7 @@ import { submitRecord } from '@/api/record';
 const formData = reactive({
   store: '',
   salesPerson: '',
+  phoneBrand: '',
   phoneModel: '',
   serialNumber: '',
   customerName: '',
@@ -107,13 +117,25 @@ const formData = reactive({
 const showStoreSelect = ref(false);
 const showModelSelect = ref(false);
 const storeList = ref(['旗舰店', '中心店', '西区店', '南区店', '北区店']);
-const phoneModelList = ref([
-  'iPhone 14 Pro', 'iPhone 14', 'iPhone 13 Pro', 'iPhone 13',
-  '华为 Mate 60', '华为 P60 Pro', '华为 Nova 12',
-  '小米 14 Pro', '小米 14', '小米 Civi 3',
-  'OPPO Find X6 Pro', 'OPPO Reno 10 Pro',
-  'vivo X100 Pro', 'vivo X100', 'vivo S18 Pro'
-]);
+const phoneBrandList = ref(['Apple', '华为', '小米', 'OPPO', 'vivo', '其他']);
+
+// 按品牌分类的手机型号
+const phoneModelMap = {
+  'Apple': ['iPhone 14 Pro Max', 'iPhone 14 Pro', 'iPhone 14 Plus', 'iPhone 14', 'iPhone 13 Pro Max', 'iPhone 13 Pro', 'iPhone 13', 'iPhone SE'],
+  '华为': ['Mate 60 Pro', 'Mate 60', 'P60 Pro', 'P60', 'Nova 12 Pro', 'Nova 12', 'Mate X5'],
+  '小米': ['小米 14 Ultra', '小米 14 Pro', '小米 14', '小米 Civi 3', 'Redmi K70 Pro', 'Redmi K70', 'Redmi Note 13 Pro'],
+  'OPPO': ['Find X7 Ultra', 'Find X7', 'Find X6 Pro', 'Reno 11 Pro', 'Reno 11', 'K12 Pro', 'K12'],
+  'vivo': ['X100 Pro', 'X100', 'S18 Pro', 'S18', 'iQOO 12 Pro', 'iQOO 12', 'Y100'],
+  '其他': ['三星 Galaxy S23 Ultra', '三星 Galaxy S23', 'Google Pixel 8 Pro', 'Google Pixel 8', '一加 12', '魅族 21 Pro']
+};
+
+const phoneModelList = ref(Object.values(phoneModelMap).flat());
+
+// 当前选择的品牌对应的型号列表
+const filteredPhoneModels = computed(() => {
+  if (!formData.phoneBrand) return [];
+  return phoneModelMap[formData.phoneBrand as keyof typeof phoneModelMap] || [];
+});
 
 // 处理门店选择
 const handleStoreChange = (e: any) => {
@@ -121,10 +143,20 @@ const handleStoreChange = (e: any) => {
   formData.store = storeList.value[index];
 };
 
+// 处理品牌选择
+const handleBrandChange = (e: any) => {
+  const index = e.detail.value;
+  formData.phoneBrand = phoneBrandList.value[index];
+  // 重置手机型号
+  formData.phoneModel = '';
+  // 自动切换到选择模式
+  showModelSelect.value = true;
+};
+
 // 处理型号选择
 const handleModelChange = (e: any) => {
   const index = e.detail.value;
-  formData.phoneModel = phoneModelList.value[index];
+  formData.phoneModel = filteredPhoneModels.value[index];
 };
 
 // 扫描串码
@@ -146,7 +178,7 @@ const scanSerialNumber = () => {
 // 选择图片
 const chooseImage = () => {
   uni.chooseImage({
-    count: 3 - formData.photos.length,
+    count: 6 - formData.photos.length,
     sizeType: ['compressed'],
     sourceType: ['camera', 'album'],
     success: (res) => {
@@ -207,6 +239,14 @@ const validateForm = () => {
     return false;
   }
   
+  if (!formData.phoneBrand.trim()) {
+    uni.showToast({
+      title: '请选择手机品牌',
+      icon: 'none'
+    });
+    return false;
+  }
+  
   if (!formData.phoneModel.trim()) {
     uni.showToast({
       title: '请输入手机型号',
@@ -250,7 +290,7 @@ const validateForm = () => {
   
   if (formData.photos.length === 0) {
     uni.showToast({
-      title: '请至少上传一张凭证照片',
+      title: '请至少上传一张手机照片',
       icon: 'none'
     });
     return false;
@@ -311,6 +351,7 @@ const submitForm = () => {
 const resetForm = () => {
   formData.store = '';
   formData.salesPerson = '';
+  formData.phoneBrand = '';
   formData.phoneModel = '';
   formData.serialNumber = '';
   formData.customerName = '';
