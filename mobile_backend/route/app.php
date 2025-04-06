@@ -10,79 +10,69 @@
 // +----------------------------------------------------------------------
 use think\facade\Route;
 
-// 添加api路由分组
-Route::group('api', function () {
-    // 登录相关路由
-    Route::post('login', 'admin.Login/login');
-    Route::get('admin/info', 'admin.Login/getInfo')->middleware('app\middleware\Auth');
-    Route::post('admin/logout', 'admin.Login/logout')->middleware('app\middleware\Auth');
-    Route::post('admin/password/update', 'admin.Login/updatePassword')->middleware('app\middleware\Auth');
-
-    // 仪表盘相关路由
-    Route::get('admin/dashboard/statistics', 'admin.Dashboard/statistics')->middleware('app\middleware\Auth');
-    Route::post('admin/dashboard/salesTrend', 'admin.Dashboard/salesTrend')->middleware('app\middleware\Auth');
-    Route::get('admin/dashboard/brandStatistics', 'admin.Dashboard/brandStatistics')->middleware('app\middleware\Auth');
-    Route::get('admin/dashboard/storeStatistics', 'admin.Dashboard/storeStatistics')->middleware('app\middleware\Auth');
-    Route::get('admin/dashboard/latestSalesRecords', 'admin.Dashboard/latestSalesRecords')->middleware('app\middleware\Auth');
-
-    // 管理员相关路由
-    Route::group('admin/user', function () {
-        Route::get('', 'admin.Admin/index');
-        Route::post('', 'admin.Admin/create');
-        Route::put(':id', 'admin.Admin/update');
-        Route::delete(':id', 'admin.Admin/delete');
-        Route::post(':id/status', 'admin.Admin/updateStatus');
-    })->middleware('app\middleware\Auth');
-
-    // 销售记录相关路由
-    Route::group('admin/sales', function () {
-        Route::get('', 'admin.Sales/index');
-        Route::post('', 'admin.Sales/create');
-        Route::put(':id', 'admin.Sales/update');
-        Route::delete(':id', 'admin.Sales/delete');
-        Route::get(':id', 'admin.Sales/detail');
-    })->middleware('app\middleware\Auth');
-
-    // 门店相关路由
-    Route::group('admin/store', function () {
-        Route::get('', 'admin.Store/index');
-        Route::post('', 'admin.Store/create');
-        Route::put(':id', 'admin.Store/update');
-        Route::delete(':id', 'admin.Store/delete');
-        Route::post(':id/status', 'admin.Store/updateStatus');
-    })->middleware('app\middleware\Auth');
-
-    // 销售员相关路由
-    Route::group('admin/salesperson', function () {
-        Route::get('', 'admin.Salesperson/index');
-        Route::post('', 'admin.Salesperson/create');
-        Route::put(':id', 'admin.Salesperson/update');
-        Route::delete(':id', 'admin.Salesperson/delete');
-        Route::post(':id/status', 'admin.Salesperson/updateStatus');
-    })->middleware('app\middleware\Auth');
-
-    // 手机品牌相关路由
-    Route::group('admin/phone/brand', function () {
-        Route::get('', 'admin.Phone/brandList');
-        Route::post('', 'admin.Phone/createBrand');
-        Route::put(':id', 'admin.Phone/updateBrand');
-        Route::delete(':id', 'admin.Phone/deleteBrand');
-    })->middleware('app\middleware\Auth');
-
-    // 手机型号相关路由
-    Route::group('admin/phone/model', function () {
-        Route::get('', 'admin.Phone/modelList');
-        Route::post('', 'admin.Phone/createModel');
-        Route::put(':id', 'admin.Phone/updateModel');
-        Route::delete(':id', 'admin.Phone/deleteModel');
-    })->middleware('app\middleware\Auth');
-
-    // 系统设置相关路由
-    Route::group('admin/system/setting', function () {
-        Route::get('', 'admin.System/getSettings');
-        Route::post('', 'admin.System/updateSettings');
-    })->middleware('app\middleware\Auth');
-
-    // 文件上传路由
-    Route::post('upload', 'admin.Upload/index')->middleware('app\middleware\Auth');
+// 登录相关路由
+Route::group('api/admin', function () {
+    Route::post('login', 'admin.LoginController/login');
+    Route::post('refresh_token', 'admin.LoginController/refreshToken');
 });
+
+// 需要登录验证的路由
+Route::group('api/admin', function () {
+    // 获取管理员信息
+    Route::get('info', 'admin.LoginController/getInfo');
+    
+    // 仪表盘数据
+    Route::get('statistics', 'admin.DashboardController/statistics');
+    Route::get('sales_trend', 'admin.DashboardController/salesTrend');
+    Route::get('brand_statistics', 'admin.DashboardController/brandStatistics');
+    Route::get('store_statistics', 'admin.DashboardController/storeStatistics');
+    Route::get('latest_sales', 'admin.DashboardController/latestSalesRecords');
+    
+    // 管理员管理
+    Route::get('admins', 'admin.AdminController/index');
+    Route::post('admin', 'admin.AdminController/create');
+    Route::put('admin/:id', 'admin.AdminController/update');
+    Route::delete('admin/:id', 'admin.AdminController/delete');
+    Route::put('admin/:id/status', 'admin.AdminController/updateStatus');
+    
+    // 销售记录管理
+    Route::get('sales', 'admin.SalesController/index');
+    Route::post('sales', 'admin.SalesController/create');
+    Route::put('sales/:id', 'admin.SalesController/update');
+    Route::delete('sales/:id', 'admin.SalesController/delete');
+    Route::get('sales/:id', 'admin.SalesController/detail');
+    
+    // 门店管理
+    Route::get('stores', 'admin.StoreController/index');
+    Route::post('store', 'admin.StoreController/create');
+    Route::put('store/:id', 'admin.StoreController/update');
+    Route::delete('store/:id', 'admin.StoreController/delete');
+    Route::put('store/:id/status', 'admin.StoreController/updateStatus');
+    
+    // 销售员管理
+    Route::get('salespersons', 'admin.SalespersonController/index');
+    Route::post('salesperson', 'admin.SalespersonController/create');
+    Route::put('salesperson/:id', 'admin.SalespersonController/update');
+    Route::delete('salesperson/:id', 'admin.SalespersonController/delete');
+    Route::put('salesperson/:id/status', 'admin.SalespersonController/updateStatus');
+    
+    // 手机品牌和型号管理
+    Route::get('phone_brands', 'admin.PhoneBrandController/index');
+    Route::post('phone_brand', 'admin.PhoneBrandController/create');
+    Route::put('phone_brand/:id', 'admin.PhoneBrandController/update');
+    Route::delete('phone_brand/:id', 'admin.PhoneBrandController/delete');
+    Route::put('phone_brand/:id/status', 'admin.PhoneBrandController/updateStatus');
+    
+    Route::get('phone_models', 'admin.PhoneModelController/index');
+    Route::post('phone_model', 'admin.PhoneModelController/create');
+    Route::put('phone_model/:id', 'admin.PhoneModelController/update');
+    Route::delete('phone_model/:id', 'admin.PhoneModelController/delete');
+    Route::put('phone_model/:id/status', 'admin.PhoneModelController/updateStatus');
+    
+    // 系统设置
+    Route::get('settings', 'admin.SystemSettingController/getSettings');
+    Route::post('settings', 'admin.SystemSettingController/updateSettings');
+    
+    // 文件上传
+    Route::post('upload/image', 'admin.UploadController/uploadImage');
+})->middleware(\app\middleware\Auth::class);

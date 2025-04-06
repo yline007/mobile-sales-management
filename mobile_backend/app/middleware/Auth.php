@@ -4,7 +4,7 @@ declare (strict_types = 1);
 namespace app\middleware;
 
 use app\model\Admin;
-use think\facade\Session;
+use jwt\JWT;
 use think\Request;
 use think\Response;
 
@@ -24,32 +24,34 @@ class Auth
      */
     public function handle(Request $request, \Closure $next): Response
     {
-        // 获取请求头中的token或从会话获取
-        $token = $request->header('Authorization');
-        if (empty($token)) {
-            $token = Session::get('admin_token');
-        }
+        // 获取请求头中的token
+        $token = JWT::getTokenFromHeader($request->header('Authorization'));
         
         // 如果没有token，返回未授权
         if (empty($token)) {
-            return json(['success' => false, 'message' => '未登录或登录已过期'], 401);
+            return json(['code' => 1, 'msg' => '未登录或登录已过期'], 401);
         }
         
-        // 从session获取管理员ID
-        $adminId = Session::get('admin_id');
-        if (empty($adminId)) {
-            return json(['success' => false, 'message' => '未登录或登录已过期'], 401);
+        // 验证token
+        $payload = JWT::verifyToken($token);
+        if ($payload === false) {
+            return json(['code' => 1, 'msg' => 'Token验证失败，请重新登录'], 401);
+        }
+        
+        // 检查是否为刷新token
+        if (isset($payload['is_refresh']) && $payload['is_refresh'] === true) {
+            return json(['code' => 1, 'msg' => '无效的访问令牌'], 401);
         }
         
         // 查询管理员信息
-        $admin = Admin::find($adminId);
+        $admin = Admin::find($payload['admin_id']);
         if (!$admin) {
-            return json(['success' => false, 'message' => '管理员不存在'], 401);
+            return json(['code' => 1, 'msg' => '管理员不存在'], 401);
         }
         
         // 判断管理员状态
         if ($admin->status != 1) {
-            return json(['success' => false, 'message' => '账号已被禁用'], 403);
+            return json(['code' => 1, 'msg' => '账号已被禁用'], 403);
         }
         
         // 将管理员信息附加到请求对象

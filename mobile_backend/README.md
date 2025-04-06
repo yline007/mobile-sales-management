@@ -75,3 +75,132 @@ ThinkPHP遵循Apache2开源协议发布，并提供免费使用。
 ThinkPHP® 商标和著作权所有者为上海顶想信息科技有限公司。
 
 更多细节参阅 [LICENSE.txt](LICENSE.txt)
+
+# 手机销售管理系统后端
+
+## 项目概述
+
+本项目是一个基于ThinkPHP 8.0的手机销售管理系统后端API，提供手机销售业务的完整管理功能。
+
+## 功能特性
+
+- 管理员账户管理和权限控制
+- JWT身份认证机制
+- 销售记录管理
+- 门店管理
+- 销售员管理
+- 手机品牌和型号管理
+- 系统设置
+- 文件上传
+
+## 技术栈
+
+- PHP 8.0+
+- ThinkPHP 8.0
+- MySQL 数据库
+- JWT认证
+- RESTful API
+
+## 安装与配置
+
+1. 克隆项目
+
+```bash
+git clone https://github.com/yourusername/mobile_project.git
+cd mobile_project/mobile_backend
+```
+
+2. 安装依赖
+
+```bash
+composer install
+```
+
+3. 配置环境变量
+
+复制`.env.example`文件为`.env`，并根据实际情况修改配置：
+
+```bash
+cp .env.example .env
+```
+
+4. 数据库迁移
+
+```bash
+php think migrate:run
+```
+
+5. 启动服务
+
+```bash
+php think run
+```
+
+## 目录结构
+
+```
+mobile_backend/
+├── app/                           // 应用目录
+│   ├── controller/                // 控制器目录
+│   │   ├── admin/                 // 管理员相关控制器
+│   ├── model/                     // 数据模型目录
+│   ├── middleware/                // 中间件目录
+│   ├── validate/                  // 验证器目录
+├── config/                        // 配置目录
+├── extend/                        // 扩展目录
+│   └── jwt/                       // JWT扩展
+├── public/                        // 公共资源目录
+├── route/                         // 路由配置目录
+├── tests/                         // 测试目录
+├── .env                           // 环境变量配置
+├── composer.json                  // Composer配置
+└── think                          // ThinkPHP命令行工具
+```
+
+## API文档
+
+API文档请参考 `/docs/api.md`
+
+## 单元测试
+
+项目使用PHPUnit进行单元测试，测试用例位于`tests`目录下。
+
+### 运行测试
+
+```bash
+composer test
+```
+
+### 编写测试
+
+测试用例需要继承`tests\TestCase`基类，可以使用Mockery进行模拟。
+
+示例：
+
+```php
+<?php
+
+namespace tests\unit;
+
+use app\model\Admin;
+use tests\TestCase;
+
+class AdminTest extends TestCase
+{
+    public function testExample()
+    {
+        $this->assertTrue(true);
+    }
+}
+```
+
+## 线上部署
+
+1. 配置Web服务器（Nginx/Apache）指向`public`目录
+2. 确保`runtime`目录可写
+3. 优化自动加载：`composer dump-autoload -o`
+4. 生产环境关闭调试模式：修改`.env`中的`APP_DEBUG=false`
+
+## 许可证
+
+MIT
