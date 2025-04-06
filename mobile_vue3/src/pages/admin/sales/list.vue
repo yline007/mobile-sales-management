@@ -29,12 +29,13 @@
         <el-table-column label="ID" prop="id" width="80"></el-table-column>
         <el-table-column label="门店" prop="storeName"></el-table-column>
         <el-table-column label="销售人员" prop="salesperson"></el-table-column>
-        <el-table-column label="手机型号" prop="phoneModel"></el-table-column>
+        <el-table-column label="手机品牌" prop="phoneBrand"></el-table-column>
+        <el-table-column label="手机型号" prop="phoneModel" width="160"></el-table-column>
         <el-table-column label="串码" prop="imei" width="200"></el-table-column>
         <el-table-column label="客户姓名" prop="customerName"></el-table-column>
         <el-table-column label="客户电话" prop="customerPhone"></el-table-column>
         <el-table-column label="销售时间" prop="createTime" width="160"></el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="180" fixed="right">
           <template #default="scope">
             <div class="flex space-x-2">
               <el-button type="primary" size="small" @click="handleEdit(scope.row)">编辑</el-button>
@@ -71,9 +72,14 @@
               :value="item.id"></el-option>
           </el-select>
         </el-form-item>
+        <el-form-item label="手机品牌" prop="phoneBrandId">
+          <el-select v-model="form.phoneBrandId" placeholder="选择手机品牌" class="w-full" @change="handleBrandChange">
+            <el-option v-for="item in phoneBrandOptions" :key="item.id" :label="item.name" :value="item.id"></el-option>
+          </el-select>
+        </el-form-item>
         <el-form-item label="手机型号" prop="phoneModelId">
-          <el-select v-model="form.phoneModelId" placeholder="选择手机型号" class="w-full">
-            <el-option v-for="item in phoneModelOptions" :key="item.id" :label="item.name" :value="item.id"></el-option>
+          <el-select v-model="form.phoneModelId" placeholder="选择手机型号" class="w-full" :disabled="!form.phoneBrandId">
+            <el-option v-for="item in filteredPhoneModels" :key="item.id" :label="item.name" :value="item.id"></el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="串码" prop="imei">
@@ -85,7 +91,7 @@
         <el-form-item label="客户电话" prop="customerPhone">
           <el-input v-model="form.customerPhone" placeholder="请输入客户电话" clearable></el-input>
         </el-form-item>
-        <el-form-item label="凭证照片" prop="photoUrl">
+        <el-form-item label="手机照片" prop="photoUrl">
           <el-upload class="avatar-uploader" action="/api/upload" :show-file-list="false"
             :on-success="handleUploadSuccess" :before-upload="beforeUpload">
             <img v-if="form.photoUrl" :src="form.photoUrl" class="w-32 h-32 object-cover" />
@@ -107,7 +113,7 @@
     </el-dialog>
 
     <!-- 查看对话框 -->
-    <el-dialog title="查看销售记录详情" v-model="viewDialogVisible" width="600px" destroy-on-close>
+    <el-dialog title="查看销售记录详情" v-model="viewDialogVisible" width="700px" destroy-on-close>
       <div v-if="currentRow" class="flex flex-col">
         <div class="grid grid-cols-2 gap-4 mb-4">
           <div>
@@ -117,6 +123,10 @@
           <div>
             <div class="text-gray-500 mb-1">销售人员:</div>
             <div>{{ currentRow.salesperson }}</div>
+          </div>
+          <div>
+            <div class="text-gray-500 mb-1">手机品牌:</div>
+            <div>{{ currentRow.phoneBrand }}</div>
           </div>
           <div>
             <div class="text-gray-500 mb-1">手机型号:</div>
@@ -139,15 +149,46 @@
             <div>{{ currentRow.createTime }}</div>
           </div>
         </div>
-        <div v-if="currentRow.photoUrl" class="mb-4">
-          <div class="text-gray-500 mb-1">凭证照片:</div>
-          <div>
-            <img :src="currentRow.photoUrl" class="max-w-md" />
-          </div>
+        
+        <!-- 照片和备注部分使用卡片式布局，更加突出显示 -->
+        <el-divider content-position="center">附加信息</el-divider>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+          <!-- 手机照片卡片 -->
+          <el-card v-if="currentRow.photoUrl" shadow="hover" class="mb-4">
+            <template #header>
+              <div class="font-medium text-gray-700">
+                <el-icon class="mr-1"><Picture /></el-icon>
+                手机照片
+              </div>
+            </template>
+            <div class="flex justify-center">
+              <el-image 
+                :src="currentRow.photoUrl" 
+                fit="cover"
+                class="max-w-full" 
+                :preview-src-list="[currentRow.photoUrl]"
+                :initial-index="0"
+                preview-teleported>
+              </el-image>
+            </div>
+          </el-card>
+          
+          <!-- 备注卡片 -->
+          <el-card v-if="currentRow.remark" shadow="hover" class="mb-4">
+            <template #header>
+              <div class="font-medium text-gray-700">
+                <el-icon class="mr-1"><Document /></el-icon>
+                备注信息
+              </div>
+            </template>
+            <div class="p-2 whitespace-pre-wrap">{{ currentRow.remark }}</div>
+          </el-card>
         </div>
-        <div v-if="currentRow.remark">
-          <div class="text-gray-500 mb-1">备注:</div>
-          <div>{{ currentRow.remark }}</div>
+        
+        <!-- 提示信息 -->
+        <div v-if="!currentRow.photoUrl && !currentRow.remark" class="text-center text-gray-500 my-4">
+          没有附加信息
         </div>
       </div>
     </el-dialog>
@@ -157,7 +198,7 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, ArrowUp, ArrowDown } from '@element-plus/icons-vue'
+import { Plus, ArrowUp, ArrowDown, Picture, Document } from '@element-plus/icons-vue'
 
 // 控制搜索表单的显示与隐藏
 const showSearchForm = ref(true)
@@ -198,6 +239,7 @@ const currentRow = ref(null)
 const form = reactive({
   storeId: '',
   salespersonId: '',
+  phoneBrandId: '',
   phoneModelId: '',
   imei: '',
   customerName: '',
@@ -209,6 +251,7 @@ const form = reactive({
 const rules = {
   storeId: [{ required: true, message: '请选择门店', trigger: 'change' }],
   salespersonId: [{ required: true, message: '请选择销售人员', trigger: 'change' }],
+  phoneBrandId: [{ required: true, message: '请选择手机品牌', trigger: 'change' }],
   phoneModelId: [{ required: true, message: '请选择手机型号', trigger: 'change' }],
   imei: [{ required: true, message: '请输入手机串码', trigger: 'blur' }],
   customerName: [{ required: true, message: '请输入客户姓名', trigger: 'blur' }],
@@ -232,13 +275,45 @@ const salespersonOptions = ref([
   { id: 3, name: '王五' }
 ])
 
-const phoneModelOptions = ref([
-  { id: 1, name: 'iPhone 13' },
-  { id: 2, name: 'iPhone 14' },
-  { id: 3, name: 'iPhone 15' },
-  { id: 4, name: 'HUAWEI P50' },
-  { id: 5, name: 'HUAWEI P60' }
+// 手机品牌选项
+const phoneBrandOptions = ref([
+  { id: 1, name: 'Apple' },
+  { id: 2, name: 'HUAWEI' },
+  { id: 3, name: 'Xiaomi' },
+  { id: 4, name: 'OPPO' },
+  { id: 5, name: 'vivo' },
+  { id: 6, name: 'Samsung' }
 ])
+
+// 手机型号选项，增加brandId字段关联品牌
+const phoneModelOptions = ref([
+  { id: 1, name: 'iPhone 13', brandId: 1 },
+  { id: 2, name: 'iPhone 14', brandId: 1 },
+  { id: 3, name: 'iPhone 15', brandId: 1 },
+  { id: 4, name: 'HUAWEI P50', brandId: 2 },
+  { id: 5, name: 'HUAWEI P60', brandId: 2 },
+  { id: 6, name: 'HUAWEI Mate 60', brandId: 2 },
+  { id: 7, name: 'Xiaomi 13', brandId: 3 },
+  { id: 8, name: 'Xiaomi 14', brandId: 3 },
+  { id: 9, name: 'Redmi K60', brandId: 3 },
+  { id: 10, name: 'OPPO Find X6', brandId: 4 },
+  { id: 11, name: 'OPPO Reno 10', brandId: 4 },
+  { id: 12, name: 'vivo X90', brandId: 5 },
+  { id: 13, name: 'vivo X100', brandId: 5 },
+  { id: 14, name: 'Samsung S23', brandId: 6 },
+  { id: 15, name: 'Samsung S24', brandId: 6 }
+])
+
+// 根据选择的品牌ID过滤型号
+const filteredPhoneModels = computed(() => {
+  if (!form.phoneBrandId) return []
+  return phoneModelOptions.value.filter(model => model.brandId === form.phoneBrandId)
+})
+
+// 品牌变更时，清空已选型号
+const handleBrandChange = () => {
+  form.phoneModelId = ''
+}
 
 // 模拟获取数据
 const getData = (p = null) => {
@@ -255,7 +330,16 @@ const getData = (p = null) => {
       const id = index + 1
       const storeIndex = Math.floor(Math.random() * storeOptions.value.length)
       const salespersonIndex = Math.floor(Math.random() * salespersonOptions.value.length)
-      const phoneModelIndex = Math.floor(Math.random() * phoneModelOptions.value.length)
+      const brandIndex = Math.floor(Math.random() * phoneBrandOptions.value.length)
+      
+      // 获取选定品牌下的所有型号
+      const brandModels = phoneModelOptions.value.filter(
+        model => model.brandId === phoneBrandOptions.value[brandIndex].id
+      )
+      
+      // 从该品牌的型号中随机选择一个
+      const phoneModelIndex = Math.floor(Math.random() * brandModels.length)
+      const phoneModel = brandModels[phoneModelIndex]
 
       return {
         id,
@@ -263,8 +347,10 @@ const getData = (p = null) => {
         storeName: storeOptions.value[storeIndex].name,
         salespersonId: salespersonOptions.value[salespersonIndex].id,
         salesperson: salespersonOptions.value[salespersonIndex].name,
-        phoneModelId: phoneModelOptions.value[phoneModelIndex].id,
-        phoneModel: phoneModelOptions.value[phoneModelIndex].name,
+        phoneBrandId: phoneBrandOptions.value[brandIndex].id,
+        phoneBrand: phoneBrandOptions.value[brandIndex].name,
+        phoneModelId: phoneModel.id,
+        phoneModel: phoneModel.name,
         imei: `IMEI${Math.floor(Math.random() * 1000000000).toString().padStart(10, '0')}`,
         customerName: `客户${id}`,
         customerPhone: `1${Math.floor(Math.random() * 10)}${Math.floor(Math.random() * 10000000).toString().padStart(8, '0')}`,
