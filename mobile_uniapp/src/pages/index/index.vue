@@ -5,24 +5,26 @@
       <view class="form-item">
         <text class="form-label">门店</text>
         <view class="form-input-wrap">
-          <picker mode="selector" :range="storeList" @change="handleStoreChange" class="form-picker">
-            <view class="picker-view">{{ formData.store || '请选择门店' }}</view>
+          <picker v-if="showStorePicker" mode="selector" :range="storeList" range-key="name" @change="handleStoreChange" class="form-picker">
+            <view class="picker-view">{{ formData.store_name || '请选择门店' }}</view>
           </picker>
+          <input v-else class="form-input" v-model="formData.store_name" placeholder="请输入门店名称" />
+          <text class="select-toggle" @click="showStorePicker = !showStorePicker">{{ showStorePicker ? '手动' : '选择' }}</text>
         </view>
       </view>
       
-      <!-- 销售人 -->
+      <!-- 销售人员 -->
       <view class="form-item">
-        <text class="form-label">销售人</text>
-        <input class="form-input" v-model="formData.salesPerson" placeholder="请输入销售员姓名" disabled />
+        <text class="form-label">销售人员</text>
+        <input class="form-input" v-model="formData.salesperson_name" placeholder="销售人员姓名" disabled />
       </view>
       
       <!-- 手机品牌和型号 -->
       <view class="form-item">
         <text class="form-label">手机品牌</text>
         <view class="form-input-wrap">
-          <picker mode="selector" :range="phoneBrandList" @change="handleBrandChange" class="form-picker">
-            <view class="picker-view">{{ formData.phoneBrand || '请选择手机品牌' }}</view>
+          <picker mode="selector" :range="phoneBrandList" range-key="name" @change="handleBrandChange" class="form-picker">
+            <view class="picker-view">{{ formData.phone_brand_name || '请选择手机品牌' }}</view>
           </picker>
         </view>
       </view>
@@ -30,9 +32,9 @@
       <view class="form-item">
         <text class="form-label">手机型号</text>
         <view class="form-input-wrap">
-          <input v-if="!showModelSelect" class="form-input" v-model="formData.phoneModel" placeholder="请输入或选择手机型号" />
-          <picker v-else mode="selector" :range="filteredPhoneModels" @change="handleModelChange" class="form-picker">
-            <view class="picker-view">{{ formData.phoneModel || '请选择手机型号' }}</view>
+          <input v-if="!showModelSelect" class="form-input" v-model="formData.phone_model_name" placeholder="请输入或选择手机型号" />
+          <picker v-else mode="selector" :range="phoneModelList" range-key="name" @change="handleModelChange" class="form-picker" :disabled="!formData.phone_brand_name">
+            <view class="picker-view">{{ formData.phone_model_name || '请选择手机型号' }}</view>
           </picker>
           <text class="select-toggle" @click="showModelSelect = !showModelSelect">{{ showModelSelect ? '手动' : '选择' }}</text>
         </view>
@@ -42,7 +44,7 @@
       <view class="form-item">
         <text class="form-label">串码</text>
         <view class="form-input-wrap">
-          <input class="form-input" v-model="formData.serialNumber" placeholder="请输入手机唯一标识码" />
+          <input class="form-input" v-model="formData.imei" placeholder="请输入手机唯一标识码" />
           <view class="scan-btn" @click="scanSerialNumber">
             <uni-icons type="scan" size="16" color="#2979ff"></uni-icons>
             <text style="margin-left: 4px;">扫码</text>
@@ -53,29 +55,29 @@
       <!-- 客户姓名 -->
       <view class="form-item">
         <text class="form-label">客户姓名</text>
-        <input class="form-input" v-model="formData.customerName" placeholder="请输入客户姓名" />
+        <input class="form-input" v-model="formData.customer_name" placeholder="请输入客户姓名" />
       </view>
       
       <!-- 电话 -->
       <view class="form-item">
         <text class="form-label">电话</text>
-        <input class="form-input" type="number" maxlength="11" v-model="formData.customerPhone" placeholder="请输入客户联系电话" />
+        <input class="form-input" type="number" maxlength="11" v-model="formData.customer_phone" placeholder="请输入客户联系电话" />
       </view>
       
       <!-- 拍照上传 -->
       <view class="form-item">
         <text class="form-label">手机照片</text>
         <view class="upload-area">
-          <view v-if="formData.photos.length === 0" class="upload-btn" @click="chooseImage">
+          <view v-if="formData.photo_url.length === 0" class="upload-btn" @click="chooseImage">
             <uni-icons type="camera" size="32" color="#999"></uni-icons>
             <text class="upload-text">添加图片</text>
           </view>
           <view v-else class="image-list">
-            <view v-for="(photo, index) in formData.photos" :key="index" class="image-item">
+            <view v-for="(photo, index) in formData.photo_url" :key="index" class="image-item">
               <image :src="photo" mode="aspectFill" class="preview-image" @click="previewImage(index)"></image>
               <text class="delete-btn" @click.stop="deleteImage(index)">×</text>
             </view>
-            <view v-if="formData.photos.length < 6" class="upload-btn small" @click="chooseImage">
+            <view v-if="formData.photo_url.length < 6" class="upload-btn small" @click="chooseImage">
               <uni-icons type="camera" size="24" color="#999"></uni-icons>
             </view>
           </view>
@@ -97,63 +99,128 @@
 import { ref, reactive, onMounted, computed } from 'vue';
 import { onShow, onLoad } from '@dcloudio/uni-app';
 import { isLoggedIn } from '@/utils/auth';
-import { submitRecord } from '@/api/record';
+import { submitRecord, type SalesRecordSubmitData } from '@/api/record';
+import { getStoreList, type Store, type ApiResponse } from '@/api/store';
+import { getBrandList, getModelList, type PhoneBrand, type PhoneModel } from '@/api/phone';
+import { BASE_URL } from '@/utils/request';
+
+// 是否显示门店选择器
+const showStorePicker = ref(true);
 
 // 表单数据
 const formData = reactive({
-  store: '',
-  salesPerson: '',
-  phoneBrand: '',
-  phoneModel: '',
-  serialNumber: '',
-  customerName: '',
-  customerPhone: '',
-  photos: [] as string[]
+  store_id: 0,
+  store_name: '',
+  salesperson_name: '',
+  phone_brand_id: 0,
+  phone_brand_name: '',
+  phone_model_id: 0,
+  phone_model_name: '',
+  imei: '',
+  customer_name: '',
+  customer_phone: '',
+  photo_url: [] as string[],
+  remark: '',
+  uploadingCount: 0
 });
 
 // 下拉选择相关
 const showModelSelect = ref(false);
-const storeList = ref(['旗舰店', '中心店', '西区店', '南区店', '北区店']);
-const phoneBrandList = ref(['Apple', '华为', '小米', 'OPPO', 'vivo', '其他']);
+const storeList = ref<Store[]>([]);
+const phoneBrandList = ref<PhoneBrand[]>([]);
+const phoneModelList = ref<PhoneModel[]>([]);
 
-// 按品牌分类的手机型号
-const phoneModelMap = {
-  'Apple': ['iPhone 14 Pro Max', 'iPhone 14 Pro', 'iPhone 14 Plus', 'iPhone 14', 'iPhone 13 Pro Max', 'iPhone 13 Pro', 'iPhone 13', 'iPhone SE'],
-  '华为': ['Mate 60 Pro', 'Mate 60', 'P60 Pro', 'P60', 'Nova 12 Pro', 'Nova 12', 'Mate X5'],
-  '小米': ['小米 14 Ultra', '小米 14 Pro', '小米 14', '小米 Civi 3', 'Redmi K70 Pro', 'Redmi K70', 'Redmi Note 13 Pro'],
-  'OPPO': ['Find X7 Ultra', 'Find X7', 'Find X6 Pro', 'Reno 11 Pro', 'Reno 11', 'K12 Pro', 'K12'],
-  'vivo': ['X100 Pro', 'X100', 'S18 Pro', 'S18', 'iQOO 12 Pro', 'iQOO 12', 'Y100'],
-  '其他': ['三星 Galaxy S23 Ultra', '三星 Galaxy S23', 'Google Pixel 8 Pro', 'Google Pixel 8', '一加 12', '魅族 21 Pro']
+// 加载门店列表
+const loadStoreList = async () => {
+  try {
+    const res: ApiResponse<Store[]> = await getStoreList();
+    if (res.code === 0) {
+      storeList.value = res.data;
+    } else {
+      uni.showToast({
+        title: res.msg || '获取门店列表失败',
+        icon: 'none'
+      });
+    }
+  } catch (error) {
+    console.error('获取门店列表失败:', error);
+    uni.showToast({
+      title: '获取门店列表失败',
+      icon: 'none'
+    });
+  }
 };
 
-const phoneModelList = ref(Object.values(phoneModelMap).flat());
+// 加载手机品牌列表
+const loadPhoneBrands = async () => {
+  try {
+    const res = await getBrandList();
+    if (res.code === 0) {
+      phoneBrandList.value = res.data;
+    } else {
+      uni.showToast({
+        title: res.msg || '获取手机品牌失败',
+        icon: 'none'
+      });
+    }
+  } catch (error) {
+    console.error('获取手机品牌失败:', error);
+    uni.showToast({
+      title: '获取手机品牌失败',
+      icon: 'none'
+    });
+  }
+};
 
-// 当前选择的品牌对应的型号列表
-const filteredPhoneModels = computed(() => {
-  if (!formData.phoneBrand) return [];
-  return phoneModelMap[formData.phoneBrand as keyof typeof phoneModelMap] || [];
-});
+// 加载手机型号列表
+const loadPhoneModels = async (brandId: number) => {
+  try {
+    const res = await getModelList(brandId);
+    if (res.code === 0) {
+      phoneModelList.value = res.data;
+    } else {
+      uni.showToast({
+        title: res.msg || '获取手机型号失败',
+        icon: 'none'
+      });
+    }
+  } catch (error) {
+    console.error('获取手机型号失败:', error);
+    uni.showToast({
+      title: '获取手机型号失败',
+      icon: 'none'
+    });
+  }
+};
 
 // 处理门店选择
 const handleStoreChange = (e: any) => {
   const index = e.detail.value;
-  formData.store = storeList.value[index];
+  const selectedStore = storeList.value[index];
+  formData.store_id = selectedStore.id;
+  formData.store_name = selectedStore.name;
 };
 
 // 处理品牌选择
-const handleBrandChange = (e: any) => {
+const handleBrandChange = async (e: any) => {
   const index = e.detail.value;
-  formData.phoneBrand = phoneBrandList.value[index];
-  // 重置手机型号
-  formData.phoneModel = '';
-  // 自动切换到选择模式
+  const selectedBrand = phoneBrandList.value[index];
+  formData.phone_brand_id = selectedBrand.id;
+  formData.phone_brand_name = selectedBrand.name;
+  formData.phone_model_id = 0;
+  formData.phone_model_name = ''; // 重置手机型号
   showModelSelect.value = true;
+  
+  // 加载该品牌的手机型号
+  await loadPhoneModels(selectedBrand.id);
 };
 
 // 处理型号选择
 const handleModelChange = (e: any) => {
   const index = e.detail.value;
-  formData.phoneModel = filteredPhoneModels.value[index];
+  const selectedModel = phoneModelList.value[index];
+  formData.phone_model_id = selectedModel.id;
+  formData.phone_model_name = selectedModel.name;
 };
 
 // 扫描串码
@@ -161,7 +228,7 @@ const scanSerialNumber = () => {
   // 调用扫码API
   uni.scanCode({
     success: (res) => {
-      formData.serialNumber = res.result;
+      formData.imei = res.result;
     },
     fail: () => {
       uni.showToast({
@@ -172,15 +239,113 @@ const scanSerialNumber = () => {
   });
 };
 
+// 上传单张图片
+const uploadImage = async (tempFilePath: string) => {
+  formData.uploadingCount++;
+  
+  try {
+    const uploadTask = uni.uploadFile({
+      url: `${BASE_URL}/api/salesperson/upload_images`,
+      filePath: tempFilePath,
+      name: 'images',
+      header: {
+        'Authorization': uni.getStorageSync('token'),
+        'Content-Type': 'multipart/form-data'
+      },
+      formData: {
+        type: 'sales_record'
+      },
+      success: (uploadRes) => {
+        try {
+          const result = JSON.parse(uploadRes.data);
+          console.log('上传结果：', result);
+          if (result.code === 0) {
+            formData.photo_url = result.data.urls.map((url: string) => `${BASE_URL}${url}`);
+            uni.showToast({
+              title: '上传成功',
+              icon: 'success'
+            });
+          } else {
+            uni.showToast({
+              title: result.msg || '图片上传失败',
+              icon: 'none'
+            });
+          }
+        } catch (e) {
+          console.error('解析上传结果失败', e, uploadRes);
+          uni.showToast({
+            title: '图片上传失败',
+            icon: 'none'
+          });
+        }
+      },
+      fail: (error) => {
+        console.error('上传失败:', error);
+        uni.showToast({
+          title: '图片上传失败: ' + error.errMsg,
+          icon: 'none',
+          duration: 3000
+        });
+      },
+      complete: () => {
+        formData.uploadingCount--;
+      }
+    });
+    
+    // 监听上传进度
+    uploadTask.onProgressUpdate((res) => {
+      console.log('上传进度', res.progress);
+    });
+  } catch (error) {
+    console.error('上传图片失败:', error);
+    formData.uploadingCount--;
+    uni.showToast({
+      title: '图片上传失败',
+      icon: 'none'
+    });
+  }
+};
+
 // 选择图片
 const chooseImage = () => {
+  if (formData.uploadingCount > 0) {
+    uni.showToast({
+      title: '请等待当前图片上传完成',
+      icon: 'none'
+    });
+    return;
+  }
+  
   uni.chooseImage({
-    count: 6 - formData.photos.length,
+    count: 6 - formData.photo_url.length,
     sizeType: ['compressed'],
     sourceType: ['camera', 'album'],
     success: (res) => {
-      // 将选择的图片添加到数组中
-      formData.photos = [...formData.photos, ...res.tempFilePaths];
+      console.log('选择图片成功:', res);
+      // 确保临时文件路径有效,并转换为数组
+      if (res.tempFilePaths && res.tempFilePaths.length > 0) {
+        const tempFilePaths = Array.from(res.tempFilePaths);
+        console.log('准备上传的图片路径:', tempFilePaths);
+        
+        // 选择完图片后立即上传
+        tempFilePaths.forEach(tempFilePath => {
+          console.log('开始上传图片:', tempFilePath);
+          uploadImage(tempFilePath);
+        });
+      } else {
+        console.error('没有选择任何图片或临时文件路径无效');
+        uni.showToast({
+          title: '图片选择失败',
+          icon: 'none'
+        });
+      }
+    },
+    fail: (error) => {
+      console.error('选择图片失败:', error);
+      uni.showToast({
+        title: '选择图片失败',
+        icon: 'none'
+      });
     }
   });
 };
@@ -188,14 +353,49 @@ const chooseImage = () => {
 // 预览图片
 const previewImage = (index: number) => {
   uni.previewImage({
-    urls: formData.photos,
-    current: formData.photos[index]
+    urls: formData.photo_url,
+    current: formData.photo_url[index]
   });
 };
 
 // 删除图片
-const deleteImage = (index: number) => {
-  formData.photos.splice(index, 1);
+const deleteImage = async (index: number) => {
+  if (formData.uploadingCount > 0) {
+    uni.showToast({
+      title: '请等待当前图片上传完成',
+      icon: 'none'
+    });
+    return;
+  }
+  
+  try {
+    // 调用删除图片接口
+    const res = await uni.request({
+      url: '/api/salesperson/delete_image',
+      method: 'POST',
+      data: {
+        url: formData.photo_url[index]
+      },
+      header: {
+        'Authorization': uni.getStorageSync('token')
+      }
+    });
+    
+    if (res.statusCode === 200) {
+      formData.photo_url.splice(index, 1);
+    } else {
+      uni.showToast({
+        title: '删除图片失败',
+        icon: 'none'
+      });
+    }
+  } catch (error) {
+    console.error('删除图片失败:', error);
+    uni.showToast({
+      title: '删除图片失败',
+      icon: 'none'
+    });
+  }
 };
 
 // 检查用户登录状态
@@ -220,7 +420,7 @@ const checkLoginStatus = () => {
 
 // 表单验证
 const validateForm = () => {
-  if (!formData.store) {
+  if (!formData.store_name) {
     uni.showToast({
       title: '请选择门店',
       icon: 'none'
@@ -228,15 +428,7 @@ const validateForm = () => {
     return false;
   }
   
-  if (!formData.salesPerson.trim()) {
-    uni.showToast({
-      title: '请输入销售人',
-      icon: 'none'
-    });
-    return false;
-  }
-  
-  if (!formData.phoneBrand.trim()) {
+  if (!formData.phone_brand_name) {
     uni.showToast({
       title: '请选择手机品牌',
       icon: 'none'
@@ -244,7 +436,7 @@ const validateForm = () => {
     return false;
   }
   
-  if (!formData.phoneModel.trim()) {
+  if (!formData.phone_model_name) {
     uni.showToast({
       title: '请输入手机型号',
       icon: 'none'
@@ -252,7 +444,7 @@ const validateForm = () => {
     return false;
   }
   
-  if (!formData.serialNumber.trim()) {
+  if (!formData.imei.trim()) {
     uni.showToast({
       title: '请输入串码',
       icon: 'none'
@@ -260,7 +452,7 @@ const validateForm = () => {
     return false;
   }
   
-  if (!formData.customerName.trim()) {
+  if (!formData.customer_name.trim()) {
     uni.showToast({
       title: '请输入客户姓名',
       icon: 'none'
@@ -268,7 +460,7 @@ const validateForm = () => {
     return false;
   }
   
-  if (!formData.customerPhone.trim()) {
+  if (!formData.customer_phone.trim()) {
     uni.showToast({
       title: '请输入客户电话',
       icon: 'none'
@@ -277,7 +469,7 @@ const validateForm = () => {
   }
   
   // 验证手机号格式
-  if (!/^1\d{10}$/.test(formData.customerPhone)) {
+  if (!/^1\d{10}$/.test(formData.customer_phone)) {
     uni.showToast({
       title: '手机号格式不正确',
       icon: 'none'
@@ -285,7 +477,7 @@ const validateForm = () => {
     return false;
   }
   
-  if (formData.photos.length === 0) {
+  if (formData.photo_url.length === 0) {
     uni.showToast({
       title: '请至少上传一张手机照片',
       icon: 'none'
@@ -297,9 +489,18 @@ const validateForm = () => {
 };
 
 // 提交表单
-const submitForm = () => {
+const submitForm = async () => {
   // 检查登录状态
   if (!checkLoginStatus()) {
+    return;
+  }
+  
+  // 检查是否有图片正在上传
+  if (formData.uploadingCount > 0) {
+    uni.showToast({
+      title: '请等待图片上传完成',
+      icon: 'none'
+    });
     return;
   }
   
@@ -313,58 +514,81 @@ const submitForm = () => {
     title: '提交中...'
   });
   
-  // 调用提交API
-  submitRecord(formData).then((res: any) => {
+  try {
+    // 调用提交API
+    const submitData: SalesRecordSubmitData = {
+      store_id: formData.store_id,
+      store_name: formData.store_name,
+      phone_brand_id: formData.phone_brand_id,
+      phone_brand_name: formData.phone_brand_name,
+      phone_model_id: formData.phone_model_id,
+      phone_model_name: formData.phone_model_name,
+      imei: formData.imei,
+      customer_name: formData.customer_name,
+      customer_phone: formData.customer_phone,
+      photo_url: formData.photo_url,
+      remark: formData.remark
+    };
+    
+    const res = await submitRecord(submitData);
+    
     uni.hideLoading();
     
-    if (res.code === 200) {
+    if (res.code === 0) {
       uni.showToast({
         title: '提交成功',
         icon: 'success',
-        duration: 2000,
-        success: () => {
-          // 提交成功后重置表单
-          setTimeout(() => {
-            resetForm();
-          }, 2000);
-        }
+        duration: 2000
       });
+      
+      // 提交成功后重置表单
+      setTimeout(() => {
+        resetForm();
+      }, 2000);
     } else {
       uni.showToast({
-        title: res.message || '提交失败',
-        icon: 'none'
+        title: res.msg || '提交失败',
+        icon: 'none',
+        duration: 2000
       });
     }
-  }).catch(() => {
+  } catch (error: any) {
+    console.error('提交销售记录失败:', error);
     uni.hideLoading();
     uni.showToast({
-      title: '提交失败，请稍后再试',
-      icon: 'none'
+      title: error.msg || '提交失败，请稍后再试',
+      icon: 'none',
+      duration: 2000
     });
-  });
+  }
 };
 
 // 重置表单
 const resetForm = () => {
-  formData.store = '';
-  formData.salesPerson = '';
-  formData.phoneBrand = '';
-  formData.phoneModel = '';
-  formData.serialNumber = '';
-  formData.customerName = '';
-  formData.customerPhone = '';
-  formData.photos = [];
+  const salesperson_name = formData.salesperson_name;
+  formData.store_id = 0;
+  formData.store_name = '';
+  formData.phone_brand_id = 0;
+  formData.phone_brand_name = '';
+  formData.phone_model_id = 0;
+  formData.phone_model_name = '';
+  formData.imei = '';
+  formData.customer_name = '';
+  formData.customer_phone = '';
+  formData.photo_url = [];
+  formData.remark = '';
+  formData.salesperson_name = salesperson_name;
   showModelSelect.value = false;
 };
 
-// 初始化用户姓名（如果已登录）
+// 初始化用户信息（如果已登录）
 const initUserInfo = () => {
   if (isLoggedIn()) {
     const userInfo = uni.getStorageSync('userInfo');
     if (userInfo) {
       try {
         const user = JSON.parse(userInfo);
-        formData.salesPerson = user.name || '';
+        formData.salesperson_name = user.name || '';
       } catch (e) {
         console.error('解析用户信息失败', e);
       }
@@ -373,12 +597,25 @@ const initUserInfo = () => {
 };
 
 // 页面挂载时
-onMounted(() => {
+onMounted(async () => {
   initUserInfo();
+  await Promise.all([
+    loadStoreList(),
+    loadPhoneBrands()
+  ]);
 });
 
 // 页面显示时
 onShow(() => {
+  // 检查登录状态
+  const token = uni.getStorageSync('token');
+  if (!token) {
+    uni.redirectTo({
+      url: '/pages/login/index'
+    });
+    return;
+  }
+  
   initUserInfo();
 });
 
@@ -401,10 +638,13 @@ onLoad(() => {
     }, 1500);
     return;
   }
+  
+  // 加载门店列表
+  loadStoreList();
 });
 </script>
 
-<style>
+<style lang="scss" scoped>
 .form-container {
   padding: 30rpx;
   background-color: #f8f8f8;
@@ -451,26 +691,27 @@ onLoad(() => {
 .form-input-wrap {
   display: flex;
   align-items: center;
+  gap: 20rpx;
 }
 
 .form-input-wrap .form-input, 
 .form-input-wrap .form-picker {
   flex: 1;
-}
-
-.picker-view {
-  width: 100%;
   height: 80rpx;
   background-color: #f9f9f9;
   border-radius: 10rpx;
-  padding: 0 20rpx;
-  font-size: 28rpx;
-  box-sizing: border-box;
-  line-height: 80rpx;
-  color: #333;
 }
 
-.select-toggle, .scan-btn {
+.select-toggle {
+  font-size: 24rpx;
+  color: #007AFF;
+  padding: 10rpx 20rpx;
+  background-color: #f0f9ff;
+  border-radius: 10rpx;
+  white-space: nowrap;
+}
+
+.scan-btn {
   margin-left: 20rpx;
   font-size: 26rpx;
   color: #2979ff;
@@ -480,6 +721,19 @@ onLoad(() => {
   display: flex;
   align-items: center;
   flex-direction: row;
+}
+
+.form-picker {
+  width: 100%;
+  height: 100%;
+}
+
+.picker-view {
+  width: 100%;
+  height: 80rpx;
+  line-height: 80rpx;
+  color: #333;
+  padding: 0 20rpx;
 }
 
 .upload-area {

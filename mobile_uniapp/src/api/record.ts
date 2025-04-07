@@ -2,6 +2,7 @@
  * 销售记录相关接口
  */
 import { get, post } from '@/utils/request';
+import request from '@/utils/request';
 
 // 模拟数据
 const mockRecords = [
@@ -42,6 +43,28 @@ const mockRecords = [
     createTime: '2023-04-04 16:42'
   }
 ];
+
+// API响应接口
+export interface ApiResponse<T = any> {
+  code: number;
+  msg: string;
+  data: T;
+}
+
+// 销售记录提交参数接口
+export interface SalesRecordSubmitData {
+  store_id?: number;        // 门店ID
+  store_name: string;       // 门店名称
+  phone_brand_id?: number;  // 手机品牌ID
+  phone_brand_name: string; // 手机品牌名称
+  phone_model_id?: number;  // 手机型号ID
+  phone_model_name: string; // 手机型号名称
+  imei: string;            // 串码(IMEI)
+  customer_name: string;    // 客户姓名
+  customer_phone: string;   // 客户电话
+  photo_url: string[];     // 图片URL数组
+  remark?: string;         // 备注（可选）
+}
 
 /**
  * 获取销售记录列表
@@ -97,37 +120,9 @@ export const getStatistics = () => {
   });
 };
 
-/**
- * 提交销售记录
- * @param params 销售记录数据
- */
-export const submitRecord = (params: {
-  store: string;
-  salesPerson: string;
-  phoneModel: string;
-  serialNumber: string;
-  customerName: string;
-  customerPhone: string;
-  photos: string[];
-}) => {
-  // 当后端API准备好后，替换为实际API调用
-  // return post('/api/record/submit', params);
-  
-  // 模拟成功响应
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        code: 200,
-        message: '提交成功',
-        data: {
-          id: `mock-${Date.now()}`,
-          ...params,
-          status: 1,
-          createTime: new Date().toLocaleString()
-        }
-      });
-    }, 800);
-  });
+// 提交销售记录
+export const submitRecord = (data: SalesRecordSubmitData) => {
+  return request.post<ApiResponse>('/api/salesperson/sales_submit', data);
 };
 
 /**

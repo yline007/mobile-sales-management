@@ -3,7 +3,7 @@
 		{
 			"path": "pages/login/index",
 			"style": {
-				"navigationBarTitleText": "登录",
+				"navigationBarTitleText": "销售员登录",
 				"enablePullDownRefresh": false
 			}
 		},
@@ -24,7 +24,7 @@
 		{
 			"path": "pages/register/index",
 			"style": {
-				"navigationBarTitleText": "注册",
+				"navigationBarTitleText": "销售员注册",
 				"enablePullDownRefresh": false
 			}
 		},

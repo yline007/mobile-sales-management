@@ -1,10 +1,8 @@
 <template>
   <view class="register-container">
-    <view class="logo-area">
-      <view class="logo-icon">
-        <uni-icons type="shop" size="80" color="#2979ff"></uni-icons>
-      </view>
-      <text class="title">销售记录管理系统</text>
+    <view class="logo-container">
+      <image class="logo-image" src="/static/images/china-mobile-5g.png" mode="aspectFit"></image>
+      <view class="logo-title">移动销售管理系统</view>
     </view>
     
     <view class="form-area">
@@ -42,9 +40,8 @@
       
       <button class="submit-btn" @click="handleRegister">注册</button>
       
-      <view class="login-link">
-        <text>已有账号？</text>
-        <text class="link" @click="goToLogin">去登录</text>
+      <view class="options">
+        <text @click="goToLogin">已有账号？立即登录</text>
       </view>
     </view>
   </view>
@@ -52,7 +49,8 @@
 
 <script setup lang="ts">
 import { reactive } from 'vue';
-import { register } from '@/api/user';
+import { register } from '@/api/salesperson';
+import { login } from '@/utils/auth';
 
 // 表单数据
 const form = reactive({
@@ -119,23 +117,30 @@ const handleRegister = () => {
   }).then((res: any) => {
     uni.hideLoading();
     
-    if (res.code === 200) {
+    if (res.code === 0) {
+      // 保存token和用户信息
+      login(res.data.token, {
+        id: res.data.id,
+        name: res.data.name,
+        phone: res.data.phone
+      });
+      
       uni.showToast({
         title: '注册成功',
         icon: 'success',
         duration: 2000,
         success: () => {
-          // 注册成功后跳转到登录页
+          // 注册成功后跳转到首页
           setTimeout(() => {
-            uni.navigateTo({
-              url: '/pages/login/index'
+            uni.switchTab({
+              url: '/pages/index/index'
             });
           }, 2000);
         }
       });
     } else {
       uni.showToast({
-        title: res.message || '注册失败',
+        title: res.msg || '注册失败',
         icon: 'none'
       });
     }
@@ -156,51 +161,64 @@ const goToLogin = () => {
 };
 </script>
 
-<style>
+<style lang="scss" scoped>
 .register-container {
-  padding: 60rpx 50rpx;
-  height: 100vh;
+  min-height: 100vh;
+  padding: 0 60rpx;
+  background: linear-gradient(180deg, #ffffff 0%, #f0f7ff 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   box-sizing: border-box;
-  background-color: #f5f5f5;
-  display: flex;
-  flex-direction: column;
 }
 
-.logo-area {
+.logo-container {
+  width: 100%;
+  padding-top: 120rpx;
+  padding-bottom: 80rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 80rpx;
-  margin-top: 80rpx;
+  animation: fadeInDown 0.8s ease-out;
 }
 
-.logo-icon {
-  width: 160rpx;
+.logo-image {
+  width: 500rpx;
   height: 160rpx;
-  margin-bottom: 30rpx;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #ffffff;
-  border-radius: 80rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+  margin-bottom: 20rpx;
 }
 
-.title {
-  font-size: 36rpx;
-  font-weight: bold;
-  color: #333;
+.logo-title {
+  font-size: 40rpx;
+  color: #0066cc;
+  font-weight: 600;
+  letter-spacing: 4rpx;
+  margin-top: 20rpx;
+  text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.1);
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .form-area {
+  width: 100%;
   background-color: #fff;
-  border-radius: 20rpx;
-  padding: 40rpx 30rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+  border-radius: 24rpx;
+  padding: 50rpx 40rpx;
+  box-shadow: 0 8rpx 30rpx rgba(0, 0, 0, 0.08);
+  margin-bottom: auto;
 }
 
 .input-group {
-  margin-bottom: 30rpx;
+  margin-bottom: 35rpx;
 }
 
 .label {
@@ -208,26 +226,29 @@ const goToLogin = () => {
   font-size: 28rpx;
   margin-bottom: 15rpx;
   color: #333;
+  font-weight: 500;
 }
 
 .input-box {
   display: flex;
   align-items: center;
   width: 100%;
-  height: 80rpx;
-  background-color: #f9f9f9;
-  border-radius: 10rpx;
-  padding: 0 20rpx;
-  font-size: 28rpx;
+  height: 90rpx;
+  background-color: #f8f9fc;
+  border-radius: 16rpx;
+  padding: 0 30rpx;
+  font-size: 30rpx;
   box-sizing: border-box;
+  border: 2rpx solid #eef1f8;
 }
 
 .input-box input {
   flex: 1;
-  height: 80rpx;
+  height: 90rpx;
   background-color: transparent;
-  margin-left: 15rpx;
+  margin-left: 20rpx;
   padding: 0;
+  font-size: 30rpx;
 }
 
 .submit-btn {
@@ -235,21 +256,33 @@ const goToLogin = () => {
   height: 90rpx;
   line-height: 90rpx;
   font-size: 32rpx;
-  background-color: #2979ff;
+  background: linear-gradient(135deg, #2979ff 0%, #0066cc 100%);
   color: #fff;
-  border-radius: 10rpx;
+  border-radius: 16rpx;
+  font-weight: 600;
+  letter-spacing: 2rpx;
+  box-shadow: 0 8rpx 16rpx rgba(41, 121, 255, 0.2);
 }
 
-.login-link {
-  margin-top: 30rpx;
-  text-align: center;
+.submit-btn:active {
+  transform: translateY(2rpx);
+  box-shadow: 0 4rpx 8rpx rgba(41, 121, 255, 0.2);
+}
+
+.options {
+  display: flex;
+  justify-content: center;
+  margin-top: 35rpx;
+  padding: 0 20rpx;
+}
+
+.options text {
   font-size: 28rpx;
-  color: #666;
+  color: #2979ff;
+  padding: 10rpx;
 }
 
-.link {
-  color: #2979ff;
-  display: inline-block;
-  margin-left: 10rpx;
+.options text:active {
+  opacity: 0.8;
 }
 </style> 
