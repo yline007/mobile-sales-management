@@ -5,11 +5,9 @@
       <view class="form-item">
         <text class="form-label">门店</text>
         <view class="form-input-wrap">
-          <input v-if="!showStoreSelect" class="form-input" v-model="formData.store" placeholder="请输入或选择门店" />
-          <picker v-else mode="selector" :range="storeList" @change="handleStoreChange" class="form-picker">
+          <picker mode="selector" :range="storeList" @change="handleStoreChange" class="form-picker">
             <view class="picker-view">{{ formData.store || '请选择门店' }}</view>
           </picker>
-          <text class="select-toggle" @click="showStoreSelect = !showStoreSelect">{{ showStoreSelect ? '手动' : '选择' }}</text>
         </view>
       </view>
       
@@ -114,7 +112,6 @@ const formData = reactive({
 });
 
 // 下拉选择相关
-const showStoreSelect = ref(false);
 const showModelSelect = ref(false);
 const storeList = ref(['旗舰店', '中心店', '西区店', '南区店', '北区店']);
 const phoneBrandList = ref(['Apple', '华为', '小米', 'OPPO', 'vivo', '其他']);
@@ -223,9 +220,9 @@ const checkLoginStatus = () => {
 
 // 表单验证
 const validateForm = () => {
-  if (!formData.store.trim()) {
+  if (!formData.store) {
     uni.showToast({
-      title: '请输入门店',
+      title: '请选择门店',
       icon: 'none'
     });
     return false;
@@ -357,7 +354,6 @@ const resetForm = () => {
   formData.customerName = '';
   formData.customerPhone = '';
   formData.photos = [];
-  showStoreSelect.value = false;
   showModelSelect.value = false;
 };
 

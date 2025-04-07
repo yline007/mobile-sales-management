@@ -3,7 +3,7 @@
     <el-card shadow="never" class="border-0">
       <!-- 头部搜索 -->
       <div class="flex items-center justify-between mb-4">
-        <el-button type="primary" @click="handleCreate" :loading="loading">新增销售记录</el-button>
+        <div></div>
         <div class="flex items-center">
           <el-input v-model="searchForm.keyword" placeholder="请输入关键词" class="mr-2" clearable></el-input>
 
@@ -35,17 +35,10 @@
         <el-table-column label="客户姓名" prop="customerName"></el-table-column>
         <el-table-column label="客户电话" prop="customerPhone"></el-table-column>
         <el-table-column label="销售时间" prop="createTime" width="160"></el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="100" fixed="right">
           <template #default="scope">
             <div class="flex space-x-2">
-              <el-button type="primary" size="small" @click="handleEdit(scope.row)">编辑</el-button>
               <el-button type="info" size="small" @click="handleView(scope.row)">查看</el-button>
-              <el-popconfirm title="是否要删除该记录？" confirmButtonText="确认" cancelButtonText="取消"
-                @confirm="handleDelete(scope.row.id)">
-                <template #reference>
-                  <el-button type="danger" size="small">删除</el-button>
-                </template>
-              </el-popconfirm>
             </div>
           </template>
         </el-table-column>
@@ -57,60 +50,6 @@
           @current-change="getData"></el-pagination>
       </div>
     </el-card>
-
-    <!-- 新增/编辑对话框 -->
-    <el-dialog :title="dialogTitle" v-model="dialogVisible" width="600px" destroy-on-close>
-      <el-form :model="form" ref="formRef" :rules="rules" label-width="80px">
-        <el-form-item label="门店" prop="storeId">
-          <el-select v-model="form.storeId" placeholder="选择门店" class="w-full">
-            <el-option v-for="item in storeOptions" :key="item.id" :label="item.name" :value="item.id"></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="销售人员" prop="salespersonId">
-          <el-select v-model="form.salespersonId" placeholder="选择销售人员" class="w-full">
-            <el-option v-for="item in salespersonOptions" :key="item.id" :label="item.name"
-              :value="item.id"></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="手机品牌" prop="phoneBrandId">
-          <el-select v-model="form.phoneBrandId" placeholder="选择手机品牌" class="w-full" @change="handleBrandChange">
-            <el-option v-for="item in phoneBrandOptions" :key="item.id" :label="item.name" :value="item.id"></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="手机型号" prop="phoneModelId">
-          <el-select v-model="form.phoneModelId" placeholder="选择手机型号" class="w-full" :disabled="!form.phoneBrandId">
-            <el-option v-for="item in filteredPhoneModels" :key="item.id" :label="item.name" :value="item.id"></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="串码" prop="imei">
-          <el-input v-model="form.imei" placeholder="请输入手机串码" clearable></el-input>
-        </el-form-item>
-        <el-form-item label="客户姓名" prop="customerName">
-          <el-input v-model="form.customerName" placeholder="请输入客户姓名" clearable></el-input>
-        </el-form-item>
-        <el-form-item label="客户电话" prop="customerPhone">
-          <el-input v-model="form.customerPhone" placeholder="请输入客户电话" clearable></el-input>
-        </el-form-item>
-        <el-form-item label="手机照片" prop="photoUrl">
-          <el-upload class="avatar-uploader" action="/api/upload" :show-file-list="false"
-            :on-success="handleUploadSuccess" :before-upload="beforeUpload">
-            <img v-if="form.photoUrl" :src="form.photoUrl" class="w-32 h-32 object-cover" />
-            <el-icon v-else class="avatar-uploader-icon">
-              <Plus />
-            </el-icon>
-          </el-upload>
-        </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="form.remark" type="textarea" placeholder="请输入备注信息" rows="3"></el-input>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleSubmit" :loading="submitLoading">确认</el-button>
-        </span>
-      </template>
-    </el-dialog>
 
     <!-- 查看对话框 -->
     <el-dialog title="查看销售记录详情" v-model="viewDialogVisible" width="700px" destroy-on-close>
@@ -228,38 +167,8 @@ const resetSearch = () => {
 }
 
 // 表单相关
-const dialogVisible = ref(false)
 const viewDialogVisible = ref(false)
-const submitLoading = ref(false)
-const dialogTitle = ref('新增销售记录')
-const formRef = ref(null)
-const currentId = ref(0)
 const currentRow = ref(null)
-
-const form = reactive({
-  storeId: '',
-  salespersonId: '',
-  phoneBrandId: '',
-  phoneModelId: '',
-  imei: '',
-  customerName: '',
-  customerPhone: '',
-  photoUrl: '',
-  remark: ''
-})
-
-const rules = {
-  storeId: [{ required: true, message: '请选择门店', trigger: 'change' }],
-  salespersonId: [{ required: true, message: '请选择销售人员', trigger: 'change' }],
-  phoneBrandId: [{ required: true, message: '请选择手机品牌', trigger: 'change' }],
-  phoneModelId: [{ required: true, message: '请选择手机型号', trigger: 'change' }],
-  imei: [{ required: true, message: '请输入手机串码', trigger: 'blur' }],
-  customerName: [{ required: true, message: '请输入客户姓名', trigger: 'blur' }],
-  customerPhone: [
-    { required: true, message: '请输入客户电话', trigger: 'blur' },
-    { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur' }
-  ]
-}
 
 // 模拟数据
 const storeOptions = ref([
@@ -303,17 +212,6 @@ const phoneModelOptions = ref([
   { id: 14, name: 'Samsung S23', brandId: 6 },
   { id: 15, name: 'Samsung S24', brandId: 6 }
 ])
-
-// 根据选择的品牌ID过滤型号
-const filteredPhoneModels = computed(() => {
-  if (!form.phoneBrandId) return []
-  return phoneModelOptions.value.filter(model => model.brandId === form.phoneBrandId)
-})
-
-// 品牌变更时，清空已选型号
-const handleBrandChange = () => {
-  form.phoneModelId = ''
-}
 
 // 模拟获取数据
 const getData = (p = null) => {
@@ -371,97 +269,10 @@ const getData = (p = null) => {
   }, 500)
 }
 
-// 处理创建
-const handleCreate = () => {
-  dialogTitle.value = '新增销售记录'
-  dialogVisible.value = true
-  currentId.value = 0
-
-  // 重置表单
-  Object.keys(form).forEach(key => {
-    form[key] = ''
-  })
-}
-
-// 处理编辑
-const handleEdit = (row) => {
-  dialogTitle.value = '编辑销售记录'
-  dialogVisible.value = true
-  currentId.value = row.id
-
-  // 填充表单
-  Object.keys(form).forEach(key => {
-    form[key] = row[key] || ''
-  })
-}
-
 // 处理查看
 const handleView = (row) => {
   currentRow.value = row
   viewDialogVisible.value = true
-}
-
-// 处理删除
-const handleDelete = (id) => {
-  loading.value = true
-
-  // 模拟API请求
-  setTimeout(() => {
-    tableData.value = tableData.value.filter(item => item.id !== id)
-    ElMessage.success('删除成功')
-    loading.value = false
-
-    if (tableData.value.length === 0 && currentPage.value > 1) {
-      currentPage.value--
-      getData()
-    }
-  }, 500)
-}
-
-// 处理表单提交
-const handleSubmit = () => {
-  if (!formRef.value) return
-
-  formRef.value.validate((valid) => {
-    if (!valid) return
-
-    submitLoading.value = true
-
-    // 模拟API请求
-    setTimeout(() => {
-      if (currentId.value === 0) {
-        // 新增
-        ElMessage.success('添加成功')
-      } else {
-        // 编辑
-        ElMessage.success('修改成功')
-      }
-
-      submitLoading.value = false
-      dialogVisible.value = false
-      getData()
-    }, 500)
-  })
-}
-
-// 上传相关
-const handleUploadSuccess = (res) => {
-  // 假设上传成功后，服务器返回了图片URL
-  form.photoUrl = res.url || 'https://via.placeholder.com/300'
-}
-
-const beforeUpload = (file) => {
-  const isJPG = file.type === 'image/jpeg'
-  const isPNG = file.type === 'image/png'
-  const isLt2M = file.size / 1024 / 1024 < 2
-
-  if (!isJPG && !isPNG) {
-    ElMessage.error('上传头像图片只能是 JPG 或 PNG 格式!')
-  }
-  if (!isLt2M) {
-    ElMessage.error('上传头像图片大小不能超过 2MB!')
-  }
-  return (isJPG || isPNG) && isLt2M
 }
 
 // 生命周期
@@ -471,7 +282,8 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.avatar-uploader {
+/* 移除上传相关的样式 */
+/* .avatar-uploader {
   border: 1px dashed #d9d9d9;
   border-radius: 6px;
   cursor: pointer;
@@ -496,22 +308,5 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-}
-
-/* 增加时间选择器样式 */
-.date-picker-wider {
-  width: 400px !important;
-}
-
-.date-picker-wider :deep(.el-input__inner) {
-  width: 100% !important;
-}
-
-.date-picker-wider :deep(.el-range-editor) {
-  width: 100% !important;
-}
-
-.date-picker-wider :deep(.el-range-input) {
-  width: 45% !important;
-}
+} */
 </style>
