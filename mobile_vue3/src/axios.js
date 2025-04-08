@@ -2,20 +2,33 @@ import axios from "axios";
 import { notification, showMessage } from '@/composables/util'
 import { getToken } from '@/composables/auth'
 import store from "@/store";
+import { refreshToken } from '@/api/admin/user'
 import { Console } from "windicss/utils";
 
 const instance = axios.create({
     baseURL: import.meta.env.VITE_APP_BASE_API,
-    // baseURL: '/',
-    timeout: 7000
+    timeout: 7000,
+    headers: {
+        'Content-Type': 'application/json'
+    }
 });
+
+// 是否正在刷新token
+let isRefreshing = false
+// 重试队列，每一项将是一个待执行的函数形式
+let requests = []
 
 // 添加请求拦截器
 instance.interceptors.request.use(function (config) {
     // 在发送请求之前做些什么
     const token = getToken()
-    console.log('统一添加 token: ' + token)
-
+    
+    // 添加时间戳参数，避免缓存
+    config.params = {
+        ...config.params,
+        _t: new Date().getTime()
+    }
+    
     // 统一添加请求头 Token
     if (token) {
         config.headers['Authorization'] = 'Bearer ' + token
@@ -33,22 +46,60 @@ instance.interceptors.response.use(function (response) {
     return response.data;
 }, function (error) {
     // 对响应错误做点什么
-    let status = error.response.status
-    console.log('错误响应==========》' + status)
-    if (status == 401 || status == 402) {
-        console.log('401-------------')
-        store.dispatch('logout').finally(() => location.reload())
-    }
-
-    let isSuccess = error.response.data.success
-    console.log('错误响应==========》' + isSuccess)
-    if (!isSuccess) {
-        console.log('error: ' + error.response.data.message)
-        let message = error.response.data.message || '请求失败'
-
-        // todo 失效的情况
-        // notification(message, 'error')
-        showMessage(messsage, 'error')
+    if (error.response) {
+        let status = error.response.status
+        console.log('错误响应状态码：' + status)
+        
+        // 认证失败(token过期等情况)
+        if (status === 401) {
+            const config = error.config
+            
+            if (!isRefreshing) {
+                isRefreshing = true
+                
+                return refreshToken().then(res => {
+                    // 刷新token成功，重新发起请求
+                    const token = getToken()
+                    config.headers['Authorization'] = 'Bearer ' + token
+                    
+                    // 执行队列中的请求
+                    requests.forEach(cb => cb(token))
+                    // 清空队列
+                    requests = []
+                    
+                    // 重新发起当前请求
+                    return instance(config)
+                }).catch(err => {
+                    console.log('刷新token失败', err)
+                    // 刷新token失败，需要重新登录
+                    store.dispatch('logout').finally(() => {
+                        location.reload()
+                    })
+                    return Promise.reject(error)
+                }).finally(() => {
+                    isRefreshing = false
+                })
+            } else {
+                // 正在刷新token，将请求加入队列
+                return new Promise((resolve) => {
+                    requests.push(() => {
+                        // token刷新后重新发起请求
+                        resolve(instance(config))
+                    })
+                })
+            }
+        } else if (status === 403) {
+            // 权限不足
+            showMessage('您没有权限执行此操作', 'error')
+        } else {
+            let message = error.response.data?.msg || '请求失败'
+            console.log('错误信息：' + message)
+            
+            // 显示错误消息
+            showMessage(message, 'error')
+        }
+    } else {
+        showMessage('网络请求失败，请检查网络连接', 'error')
     }
 
     return Promise.reject(error);

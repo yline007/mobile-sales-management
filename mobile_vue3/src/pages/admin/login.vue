@@ -94,24 +94,31 @@ const onSubmit = () => {
         }
         loading.value = true
         
-        // 模拟登录
-        setTimeout(() => {
-            if (form.username === 'admin' && form.password === '123456') {
-                // 提示成功
-                showMessage('登录成功', 'success')
+        // 调用实际登录接口
+        login(form.username, form.password).then(async res => {
+            if (res.code === 0) {
+                // 存储后端返回的token
+                setToken(res.data.access_token)
                 
-                // 模拟token
-                const token = 'mock-token-' + Date.now()
-                // 存储 token
-                setToken(token)
-                
-                // 跳转到后台页面
-                router.push('/admin')
+                try {
+                    // 获取用户信息
+                    await store.dispatch('getAdminInfo')
+                    // 提示成功
+                    showMessage('登录成功', 'success')
+                    // 跳转到后台页面
+                    router.push('/admin')
+                } catch (error) {
+                    showMessage('获取用户信息失败', 'error')
+                }
             } else {
-                showMessage('用户名或密码错误', 'error')
+                showMessage(res.msg || '用户名或密码错误', 'error')
             }
+        }).catch(err => {
+            console.error(err)
+            showMessage('登录失败，请检查网络连接', 'error')
+        }).finally(() => {
             loading.value = false
-        }, 1000)
+        })
     })
 }
 

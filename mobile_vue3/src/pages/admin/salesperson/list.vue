@@ -6,9 +6,6 @@
         <div></div>
         <div class="flex items-center">
           <el-input v-model="searchForm.keyword" placeholder="姓名/手机号" class="w-48 mr-2" clearable></el-input>
-          <el-select v-model="searchForm.storeId" placeholder="选择门店" clearable class="mr-2">
-            <el-option v-for="item in storeOptions" :key="item.id" :label="item.name" :value="item.id"></el-option>
-          </el-select>
           <el-button type="primary" @click="getData">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
         </div>
@@ -19,17 +16,15 @@
         <el-table-column label="ID" prop="id" width="80"></el-table-column>
         <el-table-column label="姓名" prop="name"></el-table-column>
         <el-table-column label="手机号" prop="phone"></el-table-column>
-        <el-table-column label="所属门店" prop="storeName"></el-table-column>
-        <el-table-column label="入职时间" prop="joinDate" width="120"></el-table-column>
-        <el-table-column label="状态" width="100">
+        <el-table-column label="状态" width="150">
           <template #default="scope">
             <el-tag :type="scope.row.status ? 'success' : 'danger'">
               {{ scope.row.status ? '启用' : '禁用' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="创建时间" prop="createTime" width="160"></el-table-column>
-        <el-table-column label="操作" width="80" fixed="right">
+        <el-table-column label="注册时间" prop="create_time" width="230"></el-table-column>
+        <el-table-column label="操作" width="150" fixed="right">
           <template #default="scope">
             <div class="flex space-x-2">
               <el-button :type="scope.row.status ? 'danger' : 'success'" size="small" @click="handleStatusChange(scope.row)">
@@ -50,7 +45,8 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getSalespersonList, updateSalespersonStatus } from '@/api/admin/user'
 
 // 表格数据
 const tableData = ref([])
@@ -77,85 +73,73 @@ const storeOptions = ref([
 const resetSearch = () => {
   searchForm.keyword = ''
   searchForm.storeId = ''
+  currentPage.value = 1
   getData()
 }
 
-// 格式化日期
-const formatDate = (date) => {
-  if (!date) return ''
-  const d = new Date(date)
-  const year = d.getFullYear()
-  const month = (d.getMonth() + 1).toString().padStart(2, '0')
-  const day = d.getDate().toString().padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-// 模拟获取数据
-const getData = (p = null) => {
+// 获取数据
+const getData = async (p = null) => {
   if (typeof p === 'number') {
     currentPage.value = p
   }
   
   loading.value = true
-  
-  // 模拟API请求
-  setTimeout(() => {
-    // 模拟数据
-    const mockData = Array.from({ length: 30 }).map((_, index) => {
-      const id = index + 1
-      const storeIndex = Math.floor(Math.random() * storeOptions.value.length)
-      
-      // 生成随机日期（过去5年内）
-      const now = new Date()
-      const pastDate = new Date(now.getFullYear() - Math.floor(Math.random() * 5), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1)
-      
-      return {
-        id,
-        name: `销售员${id}`,
-        phone: `1${Math.floor(Math.random() * 10)}${Math.floor(Math.random() * 10000000).toString().padStart(8, '0')}`,
-        storeId: storeOptions.value[storeIndex].id,
-        storeName: storeOptions.value[storeIndex].name,
-        joinDate: formatDate(pastDate),
-        status: Math.random() > 0.15 ? 1 : 0,
-        createTime: new Date().toLocaleString(),
-        remark: Math.random() > 0.7 ? '表现优秀' : ''
-      }
-    })
-    
-    // 搜索过滤
-    let filteredData = [...mockData]
-    if (searchForm.keyword) {
-      filteredData = filteredData.filter(item => 
-        item.name.includes(searchForm.keyword) || 
-        item.phone.includes(searchForm.keyword)
-      )
+  try {
+    const params = {
+      page: currentPage.value,
+      limit: limit.value,
+      keyword: searchForm.keyword,
+      store_id: searchForm.storeId || undefined
     }
-    
-    if (searchForm.storeId) {
-      filteredData = filteredData.filter(item => item.storeId === searchForm.storeId)
+
+    const res = await getSalespersonList(params)
+    if (res.code === 0) {
+      tableData.value = res.data.list
+      total.value = res.data.total
+    } else {
+      ElMessage.error(res.msg || '获取数据失败')
     }
-    
-    total.value = filteredData.length
-    
-    // 模拟分页
-    const start = (currentPage.value - 1) * limit.value
-    const end = start + limit.value
-    tableData.value = filteredData.slice(start, end)
-    
+  } catch (error) {
+    console.error('获取销售员列表失败:', error)
+    ElMessage.error('获取数据失败')
+  } finally {
     loading.value = false
-  }, 500)
+  }
 }
 
 // 处理状态切换
-const handleStatusChange = (row) => {
-  loading.value = true
-  
-  // 模拟API请求
-  setTimeout(() => {
-    row.status = row.status ? 0 : 1
-    ElMessage.success(`已将该销售员状态设置为${row.status ? '启用' : '禁用'}`)
-    loading.value = false
-  }, 500)
+const handleStatusChange = async (row) => {
+    const newStatus = row.status ? 0 : 1
+    const actionText = newStatus ? '启用' : '禁用'
+    
+    try {
+        await ElMessageBox.confirm(
+            `确定要${actionText}该销售员吗？`,
+            '提示',
+            {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }
+        )
+        
+        loading.value = true
+        const res = await updateSalespersonStatus(row.id, newStatus)
+        
+        if (res.code === 0) {
+            row.status = newStatus
+            ElMessage.success(`已成功${actionText}该销售员`)
+        } else {
+            ElMessage.error(res.msg || `${actionText}失败`)
+        }
+    } catch (error) {
+        if (error !== 'cancel') {
+            console.error('修改状态失败:', error)
+            ElMessage.error('操作失败，请重试')
+        }
+    } finally {
+        loading.value = false
+    }
 }
 
 // 生命周期

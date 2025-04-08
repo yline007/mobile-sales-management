@@ -12,15 +12,6 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 export default defineConfig({
   // 配置打包后的资源路径为相对路径
   base: './',
-  server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8081',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-      },
-    }
-  },
   plugins: [
     vue(), 
     WindiCSS(),
@@ -33,9 +24,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-      // 指定 src 文件夹别名，以便快速定位到此文件夹
-      // "~": path.resolve(__dirname, "src")
+      '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   }
 })

@@ -26,6 +26,7 @@
     "md-editor-v3": "^3.0.1",
     "moment": "^2.29.4",
     "nprogress": "^0.2.0",
+    "qs": "^6.14.0",
     "universal-cookie": "^6",
     "v-viewer": "^3.0.11",
     "vue": "^3.2.47",

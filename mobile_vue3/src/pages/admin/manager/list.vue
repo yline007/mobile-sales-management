@@ -92,9 +92,9 @@
         <el-form-item label="昵称" prop="nickname">
           <el-input v-model="form.nickname" placeholder="请输入昵称"></el-input>
         </el-form-item>
-        <el-form-item label="邮箱" prop="email">
+        <!-- <el-form-item label="邮箱" prop="email">
           <el-input v-model="form.email" placeholder="请输入邮箱"></el-input>
-        </el-form-item>
+        </el-form-item> -->
         <el-form-item label="密码" prop="password" v-if="form.id === 0">
           <el-input v-model="form.password" type="password" placeholder="请输入密码" show-password></el-input>
         </el-form-item>
@@ -206,7 +206,7 @@ const rules = {
     { required: true, message: '请输入昵称', trigger: 'blur' }
   ],
   email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
+    { required: false, message: '请输入邮箱', trigger: 'blur' },
     { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
   ],
   password: [
@@ -229,14 +229,14 @@ const getData = (p = null) => {
   loading.value = true
   
   getAdminList(currentPage.value, limit.value, searchForm.keyword).then(res => {
-    if (res.success) {
+    if (res.code === 0) {
       tableData.value = res.data.list.map(item => {
         item.statusLoading = false
         return item
       })
       total.value = res.data.total
     } else {
-      ElMessage.error(res.message || '获取数据失败')
+      ElMessage.error(res.msg || '获取数据失败')
     }
     loading.value = false
   }).catch(() => {
@@ -284,7 +284,7 @@ const handleDelete = (id) => {
       getData()
     } else {
       loading.value = false
-      ElMessage.error(res.message || '删除失败')
+      ElMessage.error(res.msg || '删除失败')
     }
   }).catch(() => {
     loading.value = false
@@ -296,10 +296,10 @@ const handleStatusChange = (row) => {
   row.statusLoading = true
   
   updateAdminStatus(row.id, row.status).then(res => {
-    if (res.success) {
+    if (res.code === 0) {
       ElMessage.success('状态更新成功')
     } else {
-      ElMessage.error(res.message || '状态更新失败')
+      ElMessage.error(res.msg || '状态更新失败')
       row.status = row.status === 1 ? 0 : 1
     }
     row.statusLoading = false
@@ -332,12 +332,12 @@ const handleSubmit = () => {
       : updateAdmin(form.id, submitData)
     
     request.then(res => {
-      if (res.success) {
+      if (res.code === 0) {
         ElMessage.success(form.id === 0 ? '添加成功' : '修改成功')
         dialogVisible.value = false
         getData()
       } else {
-        ElMessage.error(res.message || (form.id === 0 ? '添加失败' : '修改失败'))
+        ElMessage.error(res.msg || (form.id === 0 ? '添加失败' : '修改失败'))
       }
       submitLoading.value = false
     }).catch(() => {

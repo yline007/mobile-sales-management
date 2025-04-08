@@ -49,12 +49,12 @@ const menus = [{
     'path': '/admin/sales/list',
     'child': []
 },
-{
-    'name': '门店管理',
-    'icon': 'Shop',
-    'path': '/admin/store/list',
-    'child': []
-},
+// {
+//     'name': '门店管理',
+//     'icon': 'Shop',
+//     'path': '/admin/store/list',
+//     'child': []
+// },
 {
     'name': '销售员管理',
     'icon': 'User',
@@ -73,12 +73,12 @@ const menus = [{
     'path': '/admin/manager/list',
     'child': []
 },
-{
-    'name': '系统设置',
-    'icon': 'Setting',
-    'path': '/admin/system/setting',
-    'child': []
-}
+// {
+//     'name': '系统设置',
+//     'icon': 'Setting',
+//     'path': '/admin/system/setting',
+//     'child': []
+// }
 ]
 
 const handleSelect = (e) => {

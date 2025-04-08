@@ -84,6 +84,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { getStoreList, createStore, updateStore, deleteStore, updateStoreStatus } from '@/api/admin/store'
 
 // 表格数据
 const tableData = ref([])
@@ -129,47 +130,29 @@ const rules = {
   manager: [{ required: true, message: '请输入负责人姓名', trigger: 'blur' }]
 }
 
-// 模拟获取数据
-const getData = (p = null) => {
+// 获取数据
+const getData = async (p = null) => {
   if (typeof p === 'number') {
     currentPage.value = p
   }
   
   loading.value = true
   
-  // 模拟API请求
-  setTimeout(() => {
-    // 模拟数据
-    const mockData = Array.from({ length: 20 }).map((_, index) => {
-      const id = index + 1
-      
-      return {
-        id,
-        name: `门店${id}`,
-        address: `北京市朝阳区xxx街道${id}号`,
-        phone: id % 2 === 0 ? `1${Math.floor(Math.random() * 10)}${Math.floor(Math.random() * 10000000).toString().padStart(8, '0')}` : `010-${Math.floor(Math.random() * 10000000)}`,
-        manager: `负责人${id}`,
-        status: Math.random() > 0.2 ? 1 : 0,
-        createTime: new Date().toLocaleString(),
-        remark: Math.random() > 0.5 ? '这是一家旗舰店' : ''
-      }
-    })
+  try {
+    const res = await getStoreList(currentPage.value, limit.value, searchForm.keyword)
     
-    // 搜索过滤
-    let filteredData = [...mockData]
-    if (searchForm.keyword) {
-      filteredData = filteredData.filter(item => item.name.includes(searchForm.keyword))
+    if (res.code === 0) {
+      tableData.value = res.data.list || []
+      total.value = res.data.total || 0
+    } else {
+      ElMessage.error(res.msg || '获取门店列表失败')
     }
-    
-    total.value = filteredData.length
-    
-    // 模拟分页
-    const start = (currentPage.value - 1) * limit.value
-    const end = start + limit.value
-    tableData.value = filteredData.slice(start, end)
-    
+  } catch (error) {
+    console.error('获取门店列表失败:', error)
+    ElMessage.warning('获取门店列表失败')
+  } finally {
     loading.value = false
-  }, 500)
+  }
 }
 
 // 处理创建
@@ -192,68 +175,90 @@ const handleEdit = (row) => {
   
   // 填充表单
   Object.keys(form).forEach(key => {
-    form[key] = row[key]
+    if (key in row) {
+      form[key] = row[key]
+    }
   })
 }
 
 // 处理状态切换
-const handleStatusChange = (row) => {
+const handleStatusChange = async (row) => {
   loading.value = true
   
-  // 模拟API请求
-  setTimeout(() => {
-    row.status = row.status ? 0 : 1
-    ElMessage.success(`已${row.status ? '启用' : '禁用'}该门店`)
+  try {
+    const res = await updateStoreStatus(row.id, row.status ? 0 : 1)
+    
+    if (res.code === 0) {
+      ElMessage.success(row.status ? '门店已禁用' : '门店已启用')
+      getData(currentPage.value)
+    } else {
+      ElMessage.error(res.msg || '操作失败')
+    }
+  } catch (error) {
+    console.error('更新门店状态失败:', error)
+    ElMessage.warning('更新门店状态失败')
+  } finally {
     loading.value = false
-  }, 500)
+  }
 }
 
 // 处理删除
-const handleDelete = (id) => {
+const handleDelete = async (id) => {
   loading.value = true
   
-  // 模拟API请求
-  setTimeout(() => {
-    tableData.value = tableData.value.filter(item => item.id !== id)
-    ElMessage.success('删除成功')
-    loading.value = false
+  try {
+    const res = await deleteStore(id)
     
-    if (tableData.value.length === 0 && currentPage.value > 1) {
-      currentPage.value--
-      getData()
+    if (res.code === 0) {
+      ElMessage.success('删除成功')
+      
+      // 如果当前页只有一条数据，则回到上一页
+      if (tableData.value.length === 1 && currentPage.value > 1) {
+        getData(currentPage.value - 1)
+      } else {
+        getData(currentPage.value)
+      }
+    } else {
+      ElMessage.error(res.msg || '删除失败')
     }
-  }, 500)
+  } catch (error) {
+    console.error('删除门店失败:', error)
+    ElMessage.warning('删除门店失败')
+  } finally {
+    loading.value = false
+  }
 }
 
-// 处理表单提交
-const handleSubmit = () => {
-  if (!formRef.value) return
-  
-  formRef.value.validate((valid) => {
+// 表单提交
+const handleSubmit = async () => {
+  formRef.value.validate(async (valid) => {
     if (!valid) return
     
     submitLoading.value = true
     
-    // 模拟API请求
-    setTimeout(() => {
+    try {
+      let res
       if (currentId.value === 0) {
         // 新增
-        ElMessage.success('添加成功')
+        res = await createStore(form)
       } else {
         // 编辑
-        const index = tableData.value.findIndex(item => item.id === currentId.value)
-        if (index !== -1) {
-          Object.keys(form).forEach(key => {
-            tableData.value[index][key] = form[key]
-          })
-        }
-        ElMessage.success('修改成功')
+        res = await updateStore(currentId.value, form)
       }
       
+      if (res.code === 0) {
+        ElMessage.success(currentId.value === 0 ? '新增成功' : '更新成功')
+        dialogVisible.value = false
+        getData(currentPage.value)
+      } else {
+        ElMessage.error(res.msg || (currentId.value === 0 ? '新增失败' : '更新失败'))
+      }
+    } catch (error) {
+      console.error(currentId.value === 0 ? '新增门店失败' : '更新门店失败', error)
+      ElMessage.warning(currentId.value === 0 ? '新增门店失败' : '更新门店失败')
+    } finally {
       submitLoading.value = false
-      dialogVisible.value = false
-      getData()
-    }, 500)
+    }
   })
 }
 

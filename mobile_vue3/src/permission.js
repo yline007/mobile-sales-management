@@ -12,21 +12,32 @@ router.beforeEach(async (to, from, next) => {
     
     const token = getToken()
 
-    // 如果用户已登录，则自动获取用户信息，并使用全局状态管理
-    if (token) {
-        await store.dispatch('getAdminInfo')
+    // 如果用户已登录，且没有用户信息，则获取用户信息
+    if (token && !store.state.user.id) {
+        try {
+            await store.dispatch('getAdminInfo')
+        } catch (error) {
+            // Token可能已过期，清除登录状态并重定向到登录页
+            store.dispatch('logout')
+            showMessage('登录状态已过期，请重新登录', 'warning')
+            next({ path: '/login' })
+            hidePageLoading()
+            return
+        }
     }
 
     // 未登录，强制跳转登录页（除了登录页面本身）
     if (!token && to.path !== '/login') {
         showMessage('请先登录', 'warning')
         next({ path: '/login'})
+        hidePageLoading()
         return
     }
 
     // 防止重复登录
     if (token && to.path === '/login') {
         next({ path: '/admin' })
+        hidePageLoading()
         return
     }
 
