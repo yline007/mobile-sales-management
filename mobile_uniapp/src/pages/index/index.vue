@@ -5,11 +5,7 @@
       <view class="form-item">
         <text class="form-label">门店</text>
         <view class="form-input-wrap">
-          <picker v-if="showStorePicker" mode="selector" :range="storeList" range-key="name" @change="handleStoreChange" class="form-picker">
-            <view class="picker-view">{{ formData.store_name || '请选择门店' }}</view>
-          </picker>
-          <input v-else class="form-input" v-model="formData.store_name" placeholder="请输入门店名称" />
-          <text class="select-toggle" @click="showStorePicker = !showStorePicker">{{ showStorePicker ? '手动' : '选择' }}</text>
+          <input class="form-input" v-model="formData.store_name" placeholder="请输入门店名称" />
         </view>
       </view>
       
@@ -260,7 +256,9 @@ const uploadImage = async (tempFilePath: string) => {
           const result = JSON.parse(uploadRes.data);
           console.log('上传结果：', result);
           if (result.code === 0) {
-            formData.photo_url = result.data.urls.map((url: string) => `${BASE_URL}${url}`);
+            // 将新上传的图片URL添加到现有数组中，而不是替换
+            const newUrls = result.data.urls.map((url: string) => `${BASE_URL}${url}`);
+            formData.photo_url = [...formData.photo_url, ...newUrls];
             uni.showToast({
               title: '上传成功',
               icon: 'success'

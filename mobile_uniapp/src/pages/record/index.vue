@@ -1,7 +1,8 @@
 <template>
   <view class="record-container">
     <view class="record-header">
-      <view class="header-title">销售记录</view>
+      <view class="header-title">今日销售记录</view>
+      <view class="header-count" v-if="total > 0">共 {{ total }} 条</view>
     </view>
     
     <view class="record-empty" v-if="recordList.length === 0">
@@ -10,22 +11,44 @@
     </view>
     
     <view class="record-list" v-else>
-      <view class="record-item" v-for="(item, index) in recordList" :key="index">
+      <view class="record-item" v-for="(item, index) in recordList" :key="item.id">
         <view class="record-info">
-          <view class="record-title">订单号：{{ item.orderNo }}</view>
-          <view class="record-time">{{ item.createTime }}</view>
+          <view class="record-title">
+            <text class="store-name">{{ item.store_name }}</text>
+            <text class="record-time">{{ item.create_time }}</text>
+          </view>
+          <view class="record-phone">
+            <text class="phone-model">{{ item.phone_brand_name }} {{ item.phone_model_name }}</text>
+            <text class="phone-imei">IMEI: {{ item.imei }}</text>
+          </view>
+          <view class="record-customer">
+            <text class="customer-info">{{ item.customer_name }} {{ item.customer_phone }}</text>
+            <view class="photo-count" v-if="item.photo_url && item.photo_url.length">
+              <uni-icons type="image" size="14"></uni-icons>
+              <text>{{ item.photo_url.length }}</text>
+            </view>
+          </view>
+          <view class="record-remark" v-if="item.remark">
+            <text class="remark-text">备注：{{ item.remark }}</text>
+          </view>
         </view>
-        <view class="record-amount">¥{{ item.amount }}</view>
       </view>
     </view>
   </view>
 </template>
 
 <script>
+import { getTodaySales } from '@/api/record'
+
 export default {
+  onPullDownRefresh() {
+    this.loadRecordData(true);
+  },
   data() {
     return {
-      recordList: []
+      recordList: [],
+      total: 0,
+      loading: false
     }
   },
   onLoad() {
@@ -38,7 +61,6 @@ export default {
         duration: 2000
       });
       
-      // 跳转到登录页
       setTimeout(() => {
         uni.redirectTo({
           url: '/pages/login/index'
@@ -47,23 +69,57 @@ export default {
       return;
     }
     
-    // 初始化数据
-    this.initData();
+    this.loadRecordData();
   },
   methods: {
-    initData() {
-      // 模拟加载销售记录数据
-      setTimeout(() => {
-        this.loadRecordData();
-      }, 500);
-    },
-    loadRecordData() {
-      // 这里只是模拟数据，实际应该从API获取
-      this.recordList = [
-        { orderNo: 'SO20230001', amount: '1280.00', createTime: '2023-08-15 15:30:45' },
-        { orderNo: 'SO20230002', amount: '980.50', createTime: '2023-08-20 10:15:22' },
-        { orderNo: 'SO20230003', amount: '2460.00', createTime: '2023-09-05 16:45:30' }
-      ];
+    async loadRecordData(isPullDown = false) {
+      if (this.loading) return;
+      
+      this.loading = true;
+      
+      // 只在非下拉刷新时显示loading
+      if (!isPullDown) {
+        uni.showLoading({
+          title: '加载中...'
+        });
+      }
+      
+      try {
+        const res = await getTodaySales();
+        
+        if (res.code === 0 && res.data) {
+          this.recordList = res.data.list;
+          this.total = res.data.total;
+          
+          if (isPullDown) {
+            uni.showToast({
+              title: '刷新成功',
+              icon: 'success',
+              duration: 1000
+            });
+          }
+        } else {
+          uni.showToast({
+            title: res.msg || '获取记录失败',
+            icon: 'none'
+          });
+        }
+      } catch (error) {
+        console.error('获取销售记录失败:', error);
+        uni.showToast({
+          title: '获取记录失败，请稍后重试',
+          icon: 'none'
+        });
+      } finally {
+        this.loading = false;
+        if (!isPullDown) {
+          uni.hideLoading();
+        }
+        // 停止下拉刷新动画
+        if (isPullDown) {
+          uni.stopPullDownRefresh();
+        }
+      }
     }
   }
 }
@@ -79,12 +135,20 @@ export default {
 .record-header {
   background-color: #2979ff;
   padding: 20rpx 30rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .header-title {
   color: #fff;
   font-size: 32rpx;
   font-weight: bold;
+}
+
+.header-count {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 24rpx;
 }
 
 .record-empty {
@@ -112,18 +176,27 @@ export default {
 
 .record-item {
   background-color: #fff;
-  border-radius: 10rpx;
-  padding: 30rpx;
+  border-radius: 12rpx;
+  padding: 24rpx;
   margin-bottom: 20rpx;
+}
+
+.record-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.record-title {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.record-title {
-  font-size: 30rpx;
+.store-name {
+  font-size: 32rpx;
   color: #333;
-  margin-bottom: 10rpx;
+  font-weight: bold;
 }
 
 .record-time {
@@ -131,9 +204,50 @@ export default {
   color: #999;
 }
 
-.record-amount {
-  font-size: 36rpx;
-  color: #f56c6c;
-  font-weight: bold;
+.record-phone {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.phone-model {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.phone-imei {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.record-customer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 8rpx;
+}
+
+.customer-info {
+  font-size: 26rpx;
+  color: #666;
+}
+
+.photo-count {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  color: #2979ff;
+  font-size: 24rpx;
+}
+
+.record-remark {
+  margin-top: 8rpx;
+  padding-top: 8rpx;
+  border-top: 1rpx solid #eee;
+}
+
+.remark-text {
+  font-size: 24rpx;
+  color: #999;
 }
 </style> 

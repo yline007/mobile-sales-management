@@ -24,12 +24,9 @@
       
       <button class="submit-btn" @click="handleLogin">登录</button>
       
-      <!-- 测试账号快捷登录按钮 -->
-      <button class="test-login-btn" @click="handleTestLogin">测试账号登录</button>
-      
       <view class="options">
         <text @click="goToRegister">注册账号</text>
-        <text @click="goToForget">忘记密码</text>
+        <!-- <text @click="goToForget">忘记密码</text> -->
       </view>
     </view>
   </view>

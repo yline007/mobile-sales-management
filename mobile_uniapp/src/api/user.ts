@@ -1,7 +1,8 @@
 /**
  * 用户相关接口
  */
-import { get, post } from '@/utils/request';
+import { get, post, put } from '@/utils/request';
+import type { ApiResponse } from '@/api/types';
 
 /**
  * 用户登录
@@ -56,10 +57,41 @@ export const updateUserInfo = (params: {
   return post('/api/user/update-info', params);
 };
 
+// 修改密码参数接口
+interface UpdatePasswordParams {
+  old_password: string;
+  new_password: string;
+  confirm_password: string;
+}
+
+/**
+ * 修改密码
+ * @param params 密码参数
+ */
+export const updatePassword = (params: UpdatePasswordParams): Promise<ApiResponse> => {
+  return put('/api/salesperson/password', params);
+};
+
+// 个人信息更新参数接口
+interface UpdateProfileParams {
+  name: string;
+  phone: string;
+}
+
+/**
+ * 更新销售员个人信息
+ * @param params 个人信息参数
+ */
+export const updateProfile = (params: UpdateProfileParams): Promise<ApiResponse> => {
+  return put('/api/salesperson/update_profile', params);
+};
+
 export default {
   login,
   register,
   getUserInfo,
   changePassword,
-  updateUserInfo
+  updateUserInfo,
+  updatePassword,
+  updateProfile
 }; 

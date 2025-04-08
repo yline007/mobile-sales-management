@@ -2,6 +2,7 @@
  * 门店相关接口
  */
 import { get } from '@/utils/request';
+import type { ApiResponse } from '@/api/types';
 
 /**
  * 门店信息接口
@@ -13,15 +14,6 @@ export interface Store {
   phone?: string;
   status?: number;
   create_time?: string;
-}
-
-/**
- * API响应接口
- */
-export interface ApiResponse<T> {
-  code: number;
-  msg: string;
-  data: T;
 }
 
 /**

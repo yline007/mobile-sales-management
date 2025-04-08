@@ -20,14 +20,6 @@
         </view>
         <input class="form-input" v-model="userInfo.phone" placeholder="请输入手机号" :disabled="!isEdit" />
       </view>
-      
-      <view class="form-item">
-        <view class="form-label">
-          <uni-icons type="mail" size="20" color="#2979ff"></uni-icons>
-          <text class="label-text">邮箱</text>
-        </view>
-        <input class="form-input" v-model="userInfo.email" placeholder="请输入邮箱" :disabled="!isEdit" />
-      </view>
     </view>
     
     <view class="userinfo-actions">
@@ -44,6 +36,8 @@
 </template>
 
 <script>
+import { updateProfile } from '@/api/user'
+
 export default {
   data() {
     return {
@@ -51,7 +45,6 @@ export default {
         username: '',
         role: '',
         phone: '',
-        email: ''
       },
       isEdit: false
     }
@@ -84,23 +77,12 @@ export default {
       const userInfoString = uni.getStorageSync('userInfo');
       if (userInfoString) {
         this.userInfo = JSON.parse(userInfoString);
-      } else {
-        // 模拟用户数据
-        this.userInfo = {
-          username: '测试用户',
-          role: '销售员',
-          phone: '13800138000',
-          email: 'test@example.com'
-        };
-        
-        // 保存到本地存储
-        uni.setStorageSync('userInfo', JSON.stringify(this.userInfo));
       }
     },
     startEdit() {
       this.isEdit = true;
     },
-    saveUserInfo() {
+    async saveUserInfo() {
       // 表单验证
       if (!this.userInfo.name.trim()) {
         uni.showToast({
@@ -118,39 +100,64 @@ export default {
         return;
       }
       
+      // 验证手机号格式
+      if (!/^1[3-9]\d{9}$/.test(this.userInfo.phone)) {
+        uni.showToast({
+          title: '请输入正确的手机号',
+          icon: 'none'
+        });
+        return;
+      }
+      
       // 显示加载提示
       uni.showLoading({
         title: '保存中...'
       });
       
-      // 模拟提交
-      setTimeout(() => {
-        uni.hideLoading();
+      try {
+        const res = await updateProfile({
+          name: this.userInfo.name,
+          phone: this.userInfo.phone
+        })
         
-        // 更新本地存储
-        try {
-          const userInfoStr = uni.getStorageSync('userInfo');
-          if (userInfoStr) {
-            const oldUserInfo = JSON.parse(userInfoStr);
-            const newUserInfo = {
-              ...oldUserInfo,
-              name: this.userInfo.name,
-              phone: this.userInfo.phone,
-              email: this.userInfo.email
-            };
-            uni.setStorageSync('userInfo', JSON.stringify(newUserInfo));
+        if (res.code === 0) {
+          // 更新本地存储
+          try {
+            const userInfoStr = uni.getStorageSync('userInfo');
+            if (userInfoStr) {
+              const oldUserInfo = JSON.parse(userInfoStr);
+              const newUserInfo = {
+                ...oldUserInfo,
+                name: this.userInfo.name,
+                phone: this.userInfo.phone
+              };
+              uni.setStorageSync('userInfo', JSON.stringify(newUserInfo));
+            }
+          } catch (e) {
+            console.error('保存用户信息失败', e);
           }
-        } catch (e) {
-          console.error('保存用户信息失败', e);
+          
+          uni.showToast({
+            title: res.msg || '保存成功',
+            icon: 'success'
+          });
+          
+          this.isEdit = false;
+        } else {
+          uni.showToast({
+            title: res.msg || '保存失败',
+            icon: 'none'
+          });
         }
-        
+      } catch (err) {
+        console.error('修改个人信息失败:', err);
         uni.showToast({
-          title: '保存成功',
-          icon: 'success'
+          title: '保存失败，请稍后重试',
+          icon: 'none'
         });
-        
-        this.isEdit = false;
-      }, 1000);
+      } finally {
+        uni.hideLoading();
+      }
     }
   }
 }

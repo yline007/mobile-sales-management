@@ -31,8 +31,9 @@
 		{
 			"path": "pages/record/index",
 			"style": {
-				"navigationBarTitleText": "销售记录",
-				"enablePullDownRefresh": false
+				"navigationBarTitleText": "今日销售记录",
+				"enablePullDownRefresh": true,
+				"backgroundTextStyle": "dark"
 			}
 		},
 		{

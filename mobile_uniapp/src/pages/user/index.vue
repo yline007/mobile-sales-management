@@ -16,7 +16,7 @@
       <view class="menu-item" @click="navigateTo('/pages/record/index')" v-if="isLogin">
         <view class="menu-left">
           <uni-icons type="flag" size="22" color="#2979ff"></uni-icons>
-          <text class="menu-text">销售记录</text>
+          <text class="menu-text">今日提交</text>
         </view>
         <uni-icons type="right" size="18" color="#ccc"></uni-icons>
       </view>

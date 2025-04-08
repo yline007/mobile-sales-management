@@ -2,6 +2,7 @@
  * 手机相关接口
  */
 import { get } from '@/utils/request';
+import type { ApiResponse } from '@/api/types';
 
 /**
  * 手机品牌接口
@@ -20,15 +21,6 @@ export interface PhoneModel {
   brand_id: number;
   name: string;
   status?: number;
-}
-
-/**
- * API响应接口
- */
-export interface ApiResponse<T> {
-  code: number;
-  msg: string;
-  data: T;
 }
 
 /**

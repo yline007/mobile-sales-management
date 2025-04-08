@@ -2,15 +2,17 @@
  * 网络请求封装
  */
 
-// 开发环境API地址
-export const BASE_URL = 'http://localhost:8082';
+import { getApiBaseUrl } from './config';
+
+// 导出基础URL
+export const BASE_URL = getApiBaseUrl();
 
 // 拦截器配置
 uni.addInterceptor('request', {
   invoke(options) {
     // 请求前处理：添加基础URL，设置超时，添加token等
     if (!options.url.startsWith('http')) {
-      options.url = `${BASE_URL}${options.url}`;
+      options.url = `${getApiBaseUrl()}${options.url}`;
     }
     options.timeout = 10000;
     
@@ -82,7 +84,7 @@ export interface ApiResponse<T = any> {
 export const get = <T>(url: string, data: any = {}, options: any = {}): Promise<T> => {
   return new Promise((resolve, reject) => {
     uni.request({
-      url: `${BASE_URL}${url}`,
+      url: `${getApiBaseUrl()}${url}`,
       data,
       method: 'GET',
       ...options,
@@ -125,7 +127,7 @@ export const post = <T>(url: string, data: any = {}, options: any = {}): Promise
  * @param data 请求参数
  * @param options 其他选项
  */
-export const put = (url: string, data: any = {}, options: any = {}) => {
+export const put = <T>(url: string, data: any = {}, options: any = {}): Promise<T> => {
   return new Promise((resolve, reject) => {
     uni.request({
       url,
@@ -133,7 +135,7 @@ export const put = (url: string, data: any = {}, options: any = {}) => {
       method: 'PUT',
       ...options,
       success: (res: UniApp.RequestSuccessCallbackResult) => {
-        resolve(res.data);
+        resolve(res.data as T);
       },
       fail: (err: UniApp.GeneralCallbackResult) => {
         reject(err);
