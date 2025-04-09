@@ -7,7 +7,12 @@
         <div class="flex items-center">
           <el-input v-model="searchForm.keyword" placeholder="型号名称/品牌" class="w-48 mr-2" clearable></el-input>
           <el-select v-model="searchForm.brand" placeholder="选择品牌" clearable class="mr-2">
-            <el-option v-for="item in brandOptions" :key="item" :label="item" :value="item"></el-option>
+            <el-option 
+                v-for="item in brandOptions" 
+                :key="item.id" 
+                :label="item.name" 
+                :value="item.name">
+            </el-option>
           </el-select>
           <el-button type="primary" @click="getData">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
@@ -58,9 +63,19 @@
     <!-- 新增/编辑对话框 -->
     <el-dialog :title="dialogTitle" v-model="dialogVisible" width="500px" destroy-on-close>
       <el-form :model="form" ref="formRef" :rules="rules" label-width="100px">
-        <el-form-item label="品牌" prop="brand">
-          <el-select v-model="form.brand" placeholder="请选择品牌" class="w-full" filterable allow-create>
-            <el-option v-for="item in brandOptions" :key="item" :label="item" :value="item"></el-option>
+        <el-form-item label="品牌" prop="brand_id">
+          <el-select 
+              v-model="form.brand_id" 
+              placeholder="请选择品牌" 
+              class="w-full" 
+              filterable
+              @change="handleBrandChange">
+              <el-option 
+                  v-for="item in brandOptions" 
+                  :key="item.id" 
+                  :label="item.name" 
+                  :value="item.id">
+              </el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="型号名称" prop="name">
@@ -90,7 +105,15 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { 
+    getPhoneBrandList, 
+    getPhoneModelList, 
+    createPhoneModel,
+    deletePhoneModel,
+    updatePhoneModelStatus,
+    updatePhoneModel
+} from '@/api/admin/phone'
 
 // 表格数据
 const tableData = ref([])
@@ -106,18 +129,27 @@ const searchForm = reactive({
 })
 
 // 品牌选项
-const brandOptions = ref([
-  'Apple', 
-  'Samsung', 
-  'HUAWEI', 
-  'Xiaomi', 
-  'OPPO', 
-  'vivo', 
-  'realme', 
-  'OnePlus', 
-  'Honor',
-  'Google'
-])
+const brandOptions = ref([])
+
+// 获取品牌列表
+const fetchBrandOptions = async () => {
+    try {
+        const res = await getPhoneBrandList(1, 100) // 获取足够多的品牌数据
+        if (res.code === 0 && res.data && res.data.list) {
+            // 修改数据结构，保存品牌ID和名称
+            brandOptions.value = res.data.list.map(item => ({
+                id: item.id,
+                name: item.name
+            }))
+        } else {
+            console.warn('获取品牌列表失败')
+            ElMessage.warning('获取品牌列表失败')
+        }
+    } catch (error) {
+        console.error('获取品牌列表失败:', error)
+        ElMessage.error('获取品牌列表失败')
+    }
+}
 
 // 重置搜索
 const resetSearch = () => {
@@ -134,72 +166,58 @@ const formRef = ref(null)
 const currentId = ref(0)
 
 const form = reactive({
-  brand: '',
-  name: '',
-  price: '',
-  status: 1,
-  description: ''
+    brand_id: '', // 改为 brand_id
+    brand_name: '', // 添加 brand_name 字段用于显示
+    name: '',
+    price: '',
+    status: 1,
+    description: ''
 })
 
 const rules = {
-  brand: [{ required: true, message: '请选择品牌', trigger: 'change' }],
-  name: [{ required: true, message: '请输入型号名称', trigger: 'blur' }],
-  price: [
-    { type: 'number', message: '价格必须为数字', trigger: 'blur' }
-  ]
+    brand_id: [{ required: true, message: '请选择品牌', trigger: 'change' }],
+    name: [{ required: true, message: '请输入型号名称', trigger: 'blur' }],
+    price: [
+        { type: 'number', message: '价格必须为数字', trigger: 'blur' }
+    ]
 }
 
-// 模拟获取数据
-const getData = (p = null) => {
+// 获取数据
+const getData = async (p = null) => {
   if (typeof p === 'number') {
     currentPage.value = p
   }
   
   loading.value = true
   
-  // 模拟API请求
-  setTimeout(() => {
-    // 模拟数据
-    const mockData = [
-      { id: 1, brand: 'Apple', name: 'iPhone 15', price: 5999, status: 1, createTime: '2023-10-15 12:00:00', description: '最新款iPhone' },
-      { id: 2, brand: 'Apple', name: 'iPhone 14', price: 4999, status: 1, createTime: '2022-09-10 12:00:00', description: '' },
-      { id: 3, brand: 'Apple', name: 'iPhone 13', price: 3999, status: 1, createTime: '2021-09-15 12:00:00', description: '' },
-      { id: 4, brand: 'Samsung', name: 'Galaxy S23', price: 6299, status: 1, createTime: '2023-02-10 12:00:00', description: '三星旗舰' },
-      { id: 5, brand: 'HUAWEI', name: 'P60 Pro', price: 6988, status: 1, createTime: '2023-03-25 12:00:00', description: '华为旗舰' },
-      { id: 6, brand: 'HUAWEI', name: 'Mate 50', price: 5999, status: 1, createTime: '2022-09-10 12:00:00', description: '' },
-      { id: 7, brand: 'Xiaomi', name: 'MI 13', price: 3999, status: 1, createTime: '2022-12-15 12:00:00', description: '' },
-      { id: 8, brand: 'Xiaomi', name: 'MI 14', price: 4599, status: 1, createTime: '2023-10-30 12:00:00', description: '小米最新旗舰' },
-      { id: 9, brand: 'OPPO', name: 'Find X6', price: 5999, status: 1, createTime: '2023-03-22 12:00:00', description: '' },
-      { id: 10, brand: 'vivo', name: 'X100', price: 4999, status: 1, createTime: '2023-11-17 12:00:00', description: '' },
-      { id: 11, brand: 'Honor', name: 'Magic 5', price: 4299, status: 1, createTime: '2023-02-28 12:00:00', description: '' },
-      { id: 12, brand: 'OnePlus', name: 'OnePlus 11', price: 3999, status: 1, createTime: '2023-01-10 12:00:00', description: '' },
-      { id: 13, brand: 'Google', name: 'Pixel 7', price: 4999, status: 0, createTime: '2022-10-15 12:00:00', description: '' },
-      { id: 14, brand: 'Google', name: 'Pixel 8', price: 5999, status: 1, createTime: '2023-10-05 12:00:00', description: '' },
-      { id: 15, brand: 'realme', name: 'GT Neo 5', price: 2999, status: 1, createTime: '2023-02-10 12:00:00', description: '' }
-    ]
-    
-    // 搜索过滤
-    let filteredData = [...mockData]
-    if (searchForm.keyword) {
-      filteredData = filteredData.filter(item => 
-        item.name.toLowerCase().includes(searchForm.keyword.toLowerCase()) || 
-        item.brand.toLowerCase().includes(searchForm.keyword.toLowerCase())
-      )
+  try {
+    const res = await getPhoneModelList(
+      currentPage.value,
+      limit.value,
+      searchForm.keyword,
+      searchForm.brand ? brandOptions.value.find(b => b.name === searchForm.brand)?.id : null
+    )
+
+    if (res.code === 0 && res.data) {
+      tableData.value = res.data.list.map(item => ({
+        id: item.id,
+        brand: item.brand_name,
+        name: item.name,
+        price: item.price,
+        status: item.status,
+        createTime: item.create_time,
+        description: item.description || ''
+      }))
+      total.value = res.data.total
+    } else {
+      ElMessage.error(res.msg || '获取数据失败')
     }
-    
-    if (searchForm.brand) {
-      filteredData = filteredData.filter(item => item.brand === searchForm.brand)
-    }
-    
-    total.value = filteredData.length
-    
-    // 模拟分页
-    const start = (currentPage.value - 1) * limit.value
-    const end = start + limit.value
-    tableData.value = filteredData.slice(start, end)
-    
+  } catch (error) {
+    console.error('获取手机型号列表失败:', error)
+    ElMessage.error('获取手机型号列表失败')
+  } finally {
     loading.value = false
-  }, 500)
+  }
 }
 
 // 处理创建
@@ -220,80 +238,129 @@ const handleEdit = (row) => {
   dialogVisible.value = true
   currentId.value = row.id
   
+  // 查找对应的品牌ID
+  const brand = brandOptions.value.find(b => b.name === row.brand)
+  
   // 填充表单
-  Object.keys(form).forEach(key => {
-    form[key] = row[key]
-  })
+  form.brand_id = brand ? brand.id : ''
+  form.brand_name = row.brand
+  form.name = row.name
+  form.price = row.price
+  form.status = row.status
+  form.description = row.description || ''
 }
 
 // 处理状态切换
-const handleStatusChange = (row) => {
-  loading.value = true
-  
-  // 模拟API请求
-  setTimeout(() => {
-    row.status = row.status ? 0 : 1
-    ElMessage.success(`已将该型号状态设置为${row.status ? '在售' : '停售'}`)
-    loading.value = false
-  }, 500)
+const handleStatusChange = async (row) => {
+    try {
+        const newStatus = row.status ? 0 : 1
+        const confirmText = newStatus ? '确定要将该型号改为在售状态吗？' : '确定要将该型号改为停售状态吗？'
+        
+        await ElMessageBox.confirm(confirmText, '提示', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+        })
+        
+        loading.value = true
+        const res = await updatePhoneModelStatus(row.id, newStatus)
+        
+        if (res.code === 0) {
+            row.status = newStatus // 更新本地状态
+            ElMessage.success(`已将该型号状态修改为${newStatus ? '在售' : '停售'}`)
+        } else {
+            ElMessage.error(res.msg || '状态更新失败')
+        }
+    } catch (error) {
+        if (error !== 'cancel') {
+            console.error('更新手机型号状态失败:', error)
+            ElMessage.error('更新手机型号状态失败')
+        }
+    } finally {
+        loading.value = false
+    }
 }
 
 // 处理删除
-const handleDelete = (id) => {
-  loading.value = true
-  
-  // 模拟API请求
-  setTimeout(() => {
-    tableData.value = tableData.value.filter(item => item.id !== id)
-    ElMessage.success('删除成功')
-    loading.value = false
+const handleDelete = async (id) => {
+    loading.value = true
     
-    if (tableData.value.length === 0 && currentPage.value > 1) {
-      currentPage.value--
-      getData()
+    try {
+        const res = await deletePhoneModel(id)
+        
+        if (res.code === 0) {
+            ElMessage.success('删除成功')
+            // 如果当前页只有一条数据，且不是第一页，则跳转到上一页
+            if (tableData.value.length === 1 && currentPage.value > 1) {
+                currentPage.value--
+            }
+            getData() // 重新获取列表数据
+        } else {
+            ElMessage.error(res.msg || '删除失败')
+        }
+    } catch (error) {
+        console.error('删除手机型号失败:', error)
+        ElMessage.error('删除手机型号失败')
+    } finally {
+        loading.value = false
     }
-  }, 500)
 }
 
 // 处理表单提交
-const handleSubmit = () => {
-  if (!formRef.value) return
-  
-  formRef.value.validate((valid) => {
-    if (!valid) return
+const handleSubmit = async () => {
+    if (!formRef.value) return
     
-    submitLoading.value = true
-    
-    // 模拟API请求
-    setTimeout(() => {
-      if (currentId.value === 0) {
-        // 新增
-        ElMessage.success('添加成功')
-      } else {
-        // 编辑
-        const index = tableData.value.findIndex(item => item.id === currentId.value)
-        if (index !== -1) {
-          Object.keys(form).forEach(key => {
-            tableData.value[index][key] = form[key]
-          })
+    formRef.value.validate(async (valid) => {
+        if (!valid) return
+        
+        submitLoading.value = true
+        
+        try {
+            // 准备提交的数据
+            const submitData = {
+                brand_id: form.brand_id,
+                name: form.name,
+                price: form.price || 0,
+                status: form.status,
+                description: form.description || ''
+            }
+
+            let res
+            if (currentId.value === 0) {
+                // 新增
+                res = await createPhoneModel(submitData)
+            } else {
+                // 编辑
+                res = await updatePhoneModel(currentId.value, submitData)
+            }
+            
+            if (res.code === 0) {
+                ElMessage.success(currentId.value === 0 ? '添加成功' : '修改成功')
+                dialogVisible.value = false
+                getData() // 刷新列表
+            } else {
+                ElMessage.error(res.msg || (currentId.value === 0 ? '添加失败' : '修改失败'))
+            }
+        } catch (error) {
+            console.error(currentId.value === 0 ? '创建手机型号失败:' : '更新手机型号失败:', error)
+            ElMessage.error(currentId.value === 0 ? '创建手机型号失败' : '更新手机型号失败')
+        } finally {
+            submitLoading.value = false
         }
-        ElMessage.success('修改成功')
-      }
-      
-      submitLoading.value = false
-      dialogVisible.value = false
-      getData()
-      
-      // 如果是新增品牌，添加到品牌选项
-      if (!brandOptions.value.includes(form.brand)) {
-        brandOptions.value.push(form.brand)
-      }
-    }, 500)
-  })
+    })
+}
+
+// 处理品牌选择变化
+const handleBrandChange = (brandId) => {
+    const brand = brandOptions.value.find(b => b.id === brandId)
+    if (brand) {
+        form.brand_name = brand.name
+    }
 }
 
 // 生命周期
 onMounted(() => {
+  fetchBrandOptions()
   getData()
 })
 </script>

@@ -5,8 +5,12 @@ import store from "@/store";
 import { refreshToken } from '@/api/admin/user'
 import { Console } from "windicss/utils";
 
+// 添加调试日志
+console.log('API Base URL:', import.meta.env.VITE_APP_BASE_API)
+console.log('Global Config:', window.globalConfig)
+
 const instance = axios.create({
-    baseURL: import.meta.env.VITE_APP_BASE_API,
+    baseURL: window.globalConfig?.baseApi || import.meta.env.VITE_APP_BASE_API,
     timeout: 7000,
     headers: {
         'Content-Type': 'application/json'

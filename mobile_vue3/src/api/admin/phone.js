@@ -5,6 +5,9 @@ import axios from "@/axios"
  * @param {number} page - 页码
  * @param {number} limit - 每页条数
  * @param {string} keyword - 搜索关键词
+ * @returns {Promise} 返回品牌列表数据，包含：
+ * - total: 总记录数
+ * - list: 品牌列表数组
  */
 export function getPhoneBrandList(page = 1, limit = 10, keyword = '') {
     return axios.get('/admin/phone_brands', {
@@ -17,45 +20,21 @@ export function getPhoneBrandList(page = 1, limit = 10, keyword = '') {
 }
 
 /**
- * 创建手机品牌
- * @param {object} data - 品牌数据
- */
-export function createPhoneBrand(data) {
-    return axios.post('/admin/phone_brand', data)
-}
-
-/**
- * 更新手机品牌
- * @param {number} id - 品牌ID
- * @param {object} data - 品牌数据
- */
-export function updatePhoneBrand(id, data) {
-    return axios.put(`/admin/phone_brand/${id}`, data)
-}
-
-/**
- * 删除手机品牌
- * @param {number} id - 品牌ID
- */
-export function deletePhoneBrand(id) {
-    return axios.delete(`/admin/phone_brand/${id}`)
-}
-
-/**
- * 更新品牌状态
- * @param {number} id - 品牌ID
- * @param {number} status - 状态：1-启用 0-禁用
- */
-export function updatePhoneBrandStatus(id, status) {
-    return axios.put(`/admin/phone_brand/${id}/status`, { status })
-}
-
-/**
  * 获取手机型号列表
  * @param {number} page - 页码
  * @param {number} limit - 每页条数
  * @param {string} keyword - 搜索关键词
  * @param {number} brand_id - 品牌ID
+ * @returns {Promise} 返回型号列表数据，包含：
+ * - total: 总记录数
+ * - list: 型号列表数组，每个型号包含：
+ *   - id: 型号ID
+ *   - brand_name: 品牌名称
+ *   - name: 型号名称
+ *   - price: 参考价格
+ *   - status: 状态（1在售，0停售）
+ *   - create_time: 创建时间
+ *   - description: 描述
  */
 export function getPhoneModelList(page = 1, limit = 10, keyword = '', brand_id = null) {
     return axios.get('/admin/phone_models', {
@@ -104,10 +83,6 @@ export function updatePhoneModelStatus(id, status) {
 
 export default {
     getPhoneBrandList,
-    createPhoneBrand,
-    updatePhoneBrand,
-    deletePhoneBrand,
-    updatePhoneBrandStatus,
     getPhoneModelList,
     createPhoneModel,
     updatePhoneModel,

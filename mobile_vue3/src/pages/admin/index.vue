@@ -177,37 +177,52 @@ const initBrandChart = async () => {
                 value: item.value || 0,
                 name: item.name || '未知'
             }))
-        } else {
-            // 使用模拟数据
-            brandData = [
-                { value: 35, name: 'Apple' },
-                { value: 25, name: 'HUAWEI' },
-                { value: 18, name: 'Xiaomi' },
-                { value: 15, name: 'OPPO' },
-                { value: 12, name: 'vivo' },
-                { value: 6, name: '其他' }
-            ]
-            console.warn('使用模拟的品牌销量数据')
         }
         
         brandChart.value.setOption({
+            title: {
+                text: '',
+                subtext: '各品牌销量占比',
+                left: 'center',
+                top: 0
+            },
             tooltip: {
                 trigger: 'item',
-                formatter: '{a} <br/>{b}: {c} ({d}%)'
+                formatter: function(params) {
+                    return `${params.seriesName}<br/>${params.name}: ${params.value} 台 (${params.percent}%)`
+                },
+                backgroundColor: 'rgba(255,255,255,0.9)',
+                borderColor: '#ccc',
+                borderWidth: 1,
+                textStyle: {
+                    color: '#333'
+                }
             },
             legend: {
+                type: 'scroll',
                 orient: 'vertical',
-                right: 10,
-                top: 'center'
+                right: '5%',
+                top: 'middle',
+                itemWidth: 10,
+                itemHeight: 10,
+                textStyle: {
+                    fontSize: 12
+                }
             },
+            color: [
+                '#5470c6', '#91cc75', '#fac858', '#ee6666',
+                '#73c0de', '#3ba272', '#fc8452', '#9a60b4',
+                '#ea7ccc', '#0d947a', '#48b0f7', '#725e82'
+            ],
             series: [
                 {
                     name: '品牌销量',
                     type: 'pie',
-                    radius: ['50%', '70%'],
-                    avoidLabelOverlap: false,
+                    radius: ['45%', '70%'],
+                    center: ['40%', '50%'],
+                    avoidLabelOverlap: true,
                     itemStyle: {
-                        borderRadius: 10,
+                        borderRadius: 8,
                         borderColor: '#fff',
                         borderWidth: 2
                     },
@@ -215,16 +230,30 @@ const initBrandChart = async () => {
                         show: false,
                         position: 'center'
                     },
+                    labelLine: {
+                        show: true,
+                        length: 15,
+                        length2: 10,
+                        smooth: true
+                    },
                     emphasis: {
                         label: {
                             show: true,
-                            fontSize: 20,
+                            fontSize: 14,
                             fontWeight: 'bold'
+                        },
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
                         }
                     },
-                    data: brandData
+                    data: brandData.sort((a, b) => b.value - a.value)  // 按销量降序排序
                 }
-            ]
+            ],
+            animation: true,
+            animationDuration: 1000,
+            animationEasing: 'cubicInOut'
         })
     } catch (error) {
         console.error('初始化品牌图表失败:', error)
@@ -253,16 +282,6 @@ const initStoreChart = async () => {
             // 处理API返回的数据
             salesData = res.data.map(item => item.count || 0)
             dateLabels = res.data.map(item => item.date)
-        } else {
-            // 使用模拟数据
-            console.log('使用模拟的每日销量统计数据')
-            const today = new Date()
-            for (let i = 6; i >= 0; i--) {
-                const date = new Date(today)
-                date.setDate(today.getDate() - i)
-                dateLabels.push(date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }))
-                salesData.push(Math.floor(Math.random() * 20) + 5)
-            }
         }
         
         storeChart.value.setOption({
