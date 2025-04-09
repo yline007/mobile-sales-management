@@ -1,52 +1,27 @@
 <template>
-    <div>
-        <div class="grid grid-cols-6 h-screen bg-white">
-            <!-- 左边栏 -->
-            <div class="col-span-6 md:col-span-3 sm:col-span-6">
-                <div class="login-container-left flex justify-center items-center flex-col">
-                    <div class="animate__animated animate__bounceInLeft items-center flex flex-col">
-                        <h2 class="font-bold text-4xl mb-7 text-white">手机销售记录后台管理</h2>
-                        <img src="@/assets/developer.png" class="login-image">
-                    </div>
-                </div>
-            </div>
-            <!-- 右边栏 -->
-            <div class="col-span-6 px-3 md:col-span-3 sm:col-span-6">
-                <div
-                    class="login-container-right flex justify-center items-center flex-col animate__animated animate__bounceInRight animate__fast">
-                    <h2 class="font-bold text-3xl text-gray-800 mt-5">欢迎回来</h2>
-                    <div class="flex items-center justify-center my-5 text-gray-400 space-x-2">
-                        <span class="h-[1px] w-16 bg-gray-200"></span>
-                        <span>账号密码登录</span>
-                        <span class="h-[1px] w-16 bg-gray-200"></span>
-                    </div>
-                    <div>
-                        <el-form ref="formRef" :rules="rules" :model="form" class="w-[300px]">
-                            <el-form-item prop="username">
-                                <el-input v-model="form.username" :prefix-icon="User" placeholder="请输入用户名" size="large" clearable/>
-                            </el-form-item>
-                            <el-form-item prop="password">
-                                <el-input v-model="form.password" type="password" autocomplete="off" :prefix-icon="Lock"
-                                    placeholder="请输入密码" show-password size="large" clearable/>
-                            </el-form-item>
-                            <el-form-item>
-
-                                <el-button round type="primary" @click="onSubmit" :loading="loading"
-                                    class="w-[300px] login-btn mt-4" size="large">
-                                    登 录
-                                </el-button>
-
-                            </el-form-item>
-                        </el-form>
-                    </div>
-
-                </div>
-            </div>
+    <div class="login-page">
+        <div class="header">
+            <img src="@/assets/logo.png" alt="Logo" class="logo" />
         </div>
-
+        <div class="login-container">
+            <h2 class="title">系统登录</h2>
+            <el-form ref="formRef" :rules="rules" :model="form" class="login-form">
+                <el-form-item prop="username">
+                    <el-input v-model="form.username" placeholder="用户名" size="large" clearable />
+                </el-form-item>
+                <el-form-item prop="password">
+                    <el-input v-model="form.password" type="password" placeholder="密码" show-password size="large" clearable />
+                </el-form-item>
+                <el-form-item>
+                    <el-button round type="primary" @click="onSubmit" :loading="loading" class="login-btn" size="large">
+                        登录
+                    </el-button>
+                </el-form-item>
+            </el-form>
+        </div>
     </div>
 </template>
-  
+
 <script setup>
 import { reactive, ref, onMounted, onBeforeUnmount } from 'vue'
 import { login } from '@/api/admin/user';
@@ -54,7 +29,6 @@ import { showMessage } from '@/composables/util'
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import { setToken } from '@/composables/auth'
-import { User, Lock } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const store = useStore()
@@ -66,46 +40,26 @@ const form = reactive({
 
 const rules = {
     username: [
-        {
-            required: true,
-            message: '用户名不能为空',
-            trigger: 'blur'
-        }
+        { required: true, message: '用户名不能为空', trigger: 'blur' }
     ],
     password: [
-        {
-            required: true,
-            message: '密码不能为空',
-            trigger: 'blur',
-        },
+        { required: true, message: '密码不能为空', trigger: 'blur' }
     ]
 }
-
 
 const formRef = ref(null)
 const loading = ref(false)
 
 const onSubmit = () => {
-    // 登录表单验证
     formRef.value.validate((valid) => {
-        if (!valid) {
-            console.log('验证不通过')
-            return false
-        }
+        if (!valid) return false
         loading.value = true
-        
-        // 调用实际登录接口
         login(form.username, form.password).then(async res => {
             if (res.code === 0) {
-                // 存储后端返回的token
                 setToken(res.data.access_token)
-                
                 try {
-                    // 获取用户信息
                     await store.dispatch('getAdminInfo')
-                    // 提示成功
                     showMessage('登录成功', 'success')
-                    // 跳转到后台页面
                     router.push('/admin')
                 } catch (error) {
                     showMessage('获取用户信息失败', 'error')
@@ -123,51 +77,75 @@ const onSubmit = () => {
 }
 
 function onKeyUp(e) {
-    console.log(e)
     if (e.key == 'Enter') {
         onSubmit()
     }
 }
 
-// 添加键盘监听
 onMounted(() => {
-    console.log('添加键盘监听')
     document.addEventListener('keyup', onKeyUp)
 })
 
-// 移除键盘监听
 onBeforeUnmount(() => {
     document.removeEventListener('keyup', onKeyUp)
 })
-
 </script>
 
-<style>
-:deep([type='text']:focus) {
-    border-color: transparent !important;
+<style scoped>
+.login-page {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-end;
+    height: 100vh;
+    background-color: #f0f2f5;
+    background-image: url('@/assets/background_Image.jpg'); /* Set background image */
+    background-size: cover;
+    background-position: center;
+    padding-right: 20%;
+}
+
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 60px;
+    background-color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding-left: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+.logo {
+    height: 55px;
 }
 
 .login-container {
-    height: 100vh;
-    width: 100%;
+    width: 400px;
+    padding: 40px;
     background-color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    text-align: center;
+    margin-top: 80px; /* Add margin to avoid overlap with fixed header */
 }
 
-.login-container-left {
-    height: 100%;
-    background: #001428;
-    color: #fff;
+.title {
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #333;
 }
 
-.login-container-right {
-    height: 100%;
+.login-form {
+    width: 100%;
 }
 
-.login-image {
-    /* max-width: 500px;
-    height: auto; */
-    height: 450px;
+.login-btn {
+    width: 100%;
 }
-
 </style>
   
