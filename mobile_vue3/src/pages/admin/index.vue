@@ -100,13 +100,18 @@
 
 <script setup>
 import CountTo from '@/components/CountTo.vue'
-import { ref, onMounted, onUnmounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onUnmounted, onBeforeUnmount, onActivated, watch } from 'vue'
 import * as echarts from 'echarts'
-import { ElMessage } from 'element-plus'
-import { useRouter } from 'vue-router'
+import { ElMessage, ElLoading } from 'element-plus'
+import { useRouter, useRoute } from 'vue-router'
 import { getDashboardStatistics, getBrandStatistics, getDailySalesStatistics } from '@/api/admin/dashboard'
 
 const router = useRouter()
+const route = useRoute()
+
+// 表示页面是否需要刷新数据
+const needRefresh = ref(true)
+
 // 统计数据
 const todaySalesCount = ref(0)
 const storeTotalCount = ref(0)
@@ -116,6 +121,36 @@ const monthSalesAmount = ref(0)
 // 存储图表实例的引用
 const brandChart = ref(null)
 const storeChart = ref(null)
+
+// 刷新所有数据的函数
+const refreshAllData = async () => {
+  console.log('开始刷新仪表盘数据...')
+  
+  // 显示加载状态
+  const loadingInstance = ElLoading.service({
+    lock: true,
+    text: '刷新数据中...',
+    background: 'rgba(255, 255, 255, 0.7)'
+  })
+  
+  try {
+    // 并行获取所有数据
+    await Promise.all([
+      fetchDashboardData(),
+      initBrandChart(),
+      initStoreChart()
+    ])
+    
+    // 刷新完成
+    needRefresh.value = false
+  } catch (error) {
+    console.error('刷新数据失败:', error)
+    ElMessage.error('刷新数据失败，请稍后再试')
+  } finally {
+    // 关闭加载状态
+    loadingInstance.close()
+  }
+}
 
 // 获取仪表盘数据
 const fetchDashboardData = async () => {
@@ -128,28 +163,28 @@ const fetchDashboardData = async () => {
             salespersonTotalCount.value = res.data.salesperson_total_count || 0
             monthSalesAmount.value = res.data.month_sales_amount || 0
         } else {
-            // 如果API调用失败，使用模拟数据
-            console.warn('获取仪表盘数据失败，使用模拟数据')
-            todaySalesCount.value = 36
-            storeTotalCount.value = 4
-            salespersonTotalCount.value = 12
-            monthSalesAmount.value = 189650
+            // API调用失败时的处理
+            console.warn('获取仪表盘数据失败')
+            todaySalesCount.value = 0
+            storeTotalCount.value = 0
+            salespersonTotalCount.value = 0
+            monthSalesAmount.value = 0
             
             ElMessage.warning({
-                message: '获取仪表盘数据失败，已使用模拟数据',
+                message: '获取仪表盘数据失败',
                 type: 'warning'
             })
         }
     } catch (error) {
         console.error('获取仪表盘数据失败:', error)
-        // 发生错误时使用模拟数据
-        todaySalesCount.value = 36
-        storeTotalCount.value = 4
-        salespersonTotalCount.value = 12
-        monthSalesAmount.value = 189650
+        // 发生错误时处理
+        todaySalesCount.value = 0
+        storeTotalCount.value = 0
+        salespersonTotalCount.value = 0
+        monthSalesAmount.value = 0
         
         ElMessage.warning({
-            message: '获取仪表盘数据失败，已使用模拟数据',
+            message: '获取仪表盘数据失败',
             type: 'warning'
         })
     }
@@ -168,93 +203,135 @@ const initBrandChart = async () => {
         
         brandChart.value = echarts.init(chartDom)
         
-        // 获取实际品牌销量数据
-        const res = await getBrandStatistics()
-        let brandData = []
-        
-        if (res.code === 0 && res.data && res.data.length > 0) {
-            brandData = res.data.map(item => ({
-                value: item.value || 0,
-                name: item.name || '未知'
-            }))
-        }
-        
-        brandChart.value.setOption({
-            title: {
-                text: '',
-                subtext: '各品牌销量占比',
-                left: 'center',
-                top: 0
-            },
-            tooltip: {
-                trigger: 'item',
-                formatter: function(params) {
-                    return `${params.seriesName}<br/>${params.name}: ${params.value} 台 (${params.percent}%)`
-                },
-                backgroundColor: 'rgba(255,255,255,0.9)',
-                borderColor: '#ccc',
-                borderWidth: 1,
-                textStyle: {
-                    color: '#333'
-                }
-            },
-            legend: {
-                type: 'scroll',
-                orient: 'vertical',
-                right: '5%',
-                top: 'middle',
-                itemWidth: 10,
-                itemHeight: 10,
-                textStyle: {
-                    fontSize: 12
-                }
-            },
-            color: [
-                '#5470c6', '#91cc75', '#fac858', '#ee6666',
-                '#73c0de', '#3ba272', '#fc8452', '#9a60b4',
-                '#ea7ccc', '#0d947a', '#48b0f7', '#725e82'
-            ],
-            series: [
-                {
-                    name: '品牌销量',
-                    type: 'pie',
-                    radius: ['45%', '70%'],
-                    center: ['40%', '50%'],
-                    avoidLabelOverlap: true,
-                    itemStyle: {
-                        borderRadius: 8,
-                        borderColor: '#fff',
-                        borderWidth: 2
-                    },
-                    label: {
-                        show: false,
-                        position: 'center'
-                    },
-                    labelLine: {
-                        show: true,
-                        length: 15,
-                        length2: 10,
-                        smooth: true
-                    },
-                    emphasis: {
-                        label: {
-                            show: true,
-                            fontSize: 14,
-                            fontWeight: 'bold'
-                        },
-                        itemStyle: {
-                            shadowBlur: 10,
-                            shadowOffsetX: 0,
-                            shadowColor: 'rgba(0, 0, 0, 0.5)'
-                        }
-                    },
-                    data: brandData.sort((a, b) => b.value - a.value)  // 按销量降序排序
-                }
-            ],
-            animation: true,
-            animationDuration: 1000,
-            animationEasing: 'cubicInOut'
+        // 添加加载动画
+        brandChart.value.showLoading({
+            text: '数据加载中...',
+            maskColor: 'rgba(255, 255, 255, 0.8)',
+            color: '#2378f7'
         })
+        
+        try {
+            // 获取实际品牌销量数据
+            const res = await getBrandStatistics()
+            let brandData = []
+            
+            if (res.code === 0 && res.data && res.data.length > 0) {
+                brandData = res.data.map(item => ({
+                    value: item.value || 0,
+                    name: item.name || '未知'
+                }))
+            } else {
+                // 数据为空时显示提示
+                brandData = [{ value: 0, name: '暂无数据' }]
+            }
+            
+            // 确保数据不为空
+            if (!brandData || brandData.length === 0) {
+                brandData = [{ value: 0, name: '暂无数据' }]
+            }
+            
+            // 隐藏加载动画
+            brandChart.value.hideLoading()
+            
+            const option = {
+                title: {
+                    text: '',
+                    subtext: '各品牌销量占比',
+                    left: 'center',
+                    top: 0
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function(params) {
+                        if (!params || !params.name) {
+                            return '数据加载中'
+                        }
+                        return `${params.seriesName}<br/>${params.name}: ${params.value} 台 (${params.percent}%)`
+                    },
+                    backgroundColor: 'rgba(255,255,255,0.9)',
+                    borderColor: '#ccc',
+                    borderWidth: 1,
+                    textStyle: {
+                        color: '#333'
+                    }
+                },
+                legend: {
+                    type: 'scroll',
+                    orient: 'vertical',
+                    right: '5%',
+                    top: 'middle',
+                    itemWidth: 10,
+                    itemHeight: 10,
+                    textStyle: {
+                        fontSize: 12
+                    }
+                },
+                color: [
+                    '#5470c6', '#91cc75', '#fac858', '#ee6666',
+                    '#73c0de', '#3ba272', '#fc8452', '#9a60b4',
+                    '#ea7ccc', '#0d947a', '#48b0f7', '#725e82'
+                ],
+                series: [
+                    {
+                        name: '品牌销量',
+                        type: 'pie',
+                        radius: ['45%', '70%'],
+                        center: ['40%', '50%'],
+                        avoidLabelOverlap: true,
+                        itemStyle: {
+                            borderRadius: 8,
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        },
+                        label: {
+                            show: false,
+                            position: 'center'
+                        },
+                        labelLine: {
+                            show: true,
+                            length: 15,
+                            length2: 10,
+                            smooth: true
+                        },
+                        emphasis: {
+                            label: {
+                                show: true,
+                                fontSize: 14,
+                                fontWeight: 'bold'
+                            },
+                            itemStyle: {
+                                shadowBlur: 10,
+                                shadowOffsetX: 0,
+                                shadowColor: 'rgba(0, 0, 0, 0.5)'
+                            }
+                        },
+                        data: brandData.sort((a, b) => b.value - a.value)  // 按销量降序排序
+                    }
+                ],
+                animation: true,
+                animationDuration: 1000,
+                animationEasing: 'cubicInOut'
+            }
+            
+            brandChart.value.setOption(option)
+        } catch (error) {
+            console.error('获取品牌数据失败:', error)
+            // 隐藏加载动画
+            brandChart.value.hideLoading()
+            
+            // 显示错误提示
+            brandChart.value.setOption({
+                title: {
+                    text: '数据加载失败',
+                    left: 'center',
+                    top: 'center',
+                    textStyle: {
+                        color: '#999',
+                        fontSize: 16
+                    }
+                }
+            })
+        }
     } catch (error) {
         console.error('初始化品牌图表失败:', error)
     }
@@ -273,141 +350,289 @@ const initStoreChart = async () => {
         
         storeChart.value = echarts.init(chartDom)
         
-        // 获取每日销量统计数据
-        const res = await getDailySalesStatistics()
-        let salesData = []
-        let dateLabels = []
+        // 添加加载动画
+        storeChart.value.showLoading({
+            text: '数据加载中...',
+            maskColor: 'rgba(255, 255, 255, 0.8)',
+            color: '#2378f7'
+        })
         
-        if (res.code === 0 && res.data && res.data.length > 0) {
-            // 处理API返回的数据
-            salesData = res.data.map(item => item.count || 0)
-            dateLabels = res.data.map(item => item.date)
-        }
-        
-        storeChart.value.setOption({
-            tooltip: {
-                trigger: 'axis',
-                axisPointer: {
-                    type: 'shadow'
-                },
-                formatter: function(params) {
-                    const data = params[0]
-                    return `${data.name} 日销量：${data.value} 台`
+        try {
+            // 获取每日销量统计数据
+            const res = await getDailySalesStatistics()
+            let salesData = []
+            let dateLabels = []
+            
+            console.log('每日销量API响应:', res) // 调试日志
+            
+            // 适配新的数据结构：检查res.data.list
+            if (res.code === 0 && res.data) {
+                // 获取正确的数据列表
+                const dataList = res.data.list || (Array.isArray(res.data) ? res.data : [])
+                
+                if (dataList.length > 0) {
+                    // 确保数据按日期排序
+                    const sortedData = [...dataList].sort((a, b) => {
+                        return new Date(a.date) - new Date(b.date)
+                    })
+                    
+                    console.log('排序后的销量数据:', sortedData) // 调试日志
+                    
+                    // 处理API返回的数据，适配不同的字段名
+                    salesData = sortedData.map(item => {
+                        // 尝试不同的销量字段名
+                        const count = typeof item.total_sales === 'number' ? item.total_sales : 
+                                    (typeof item.count === 'number' ? item.count : 
+                                    (typeof item.sales_count === 'number' ? item.sales_count : 0))
+                        return count
+                    })
+                    
+                    // 格式化日期标签 (YYYY-MM-DD -> MM/DD)
+                    dateLabels = sortedData.map(item => {
+                        const dateStr = item.date || ''
+                        if (dateStr.includes('-')) {
+                            const dateParts = dateStr.split('-')
+                            if (dateParts.length >= 3) {
+                                return `${parseInt(dateParts[1])}/${parseInt(dateParts[2])}`
+                            }
+                        }
+                        return dateStr
+                    })
+                    
+                    console.log('处理后的销量数据:', salesData) // 调试日志
+                    console.log('处理后的日期标签:', dateLabels) // 调试日志
+                } else {
+                    console.log('API返回的数据列表为空')
+                    dateLabels = ['暂无数据']
+                    salesData = [0]
                 }
-            },
-            grid: {
-                left: '3%',
-                right: '4%',
-                bottom: '3%',
-                containLabel: true
-            },
-            xAxis: {
-                type: 'category',
-                data: dateLabels,
-                axisTick: {
-                    alignWithLabel: true
-                },
-                axisLabel: {
-                    rotate: 0
-                },
-                name: '日期'
-            },
-            yAxis: {
-                type: 'value',
-                minInterval: 1,
-                splitLine: {
-                    lineStyle: {
-                        type: 'dashed'
+            } else {
+                // 数据为空的情况
+                dateLabels = ['暂无数据']
+                salesData = [0]
+                console.log('API返回数据为空或格式不正确')
+            }
+            
+            // 确保数据不为空
+            if (!salesData || salesData.length === 0 || !dateLabels || dateLabels.length === 0) {
+                dateLabels = ['暂无数据']
+                salesData = [0]
+                console.log('数据处理后为空，使用默认值')
+            }
+            
+            // 隐藏加载动画
+            storeChart.value.hideLoading()
+            
+            const option = {
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    },
+                    formatter: function(params) {
+                        if (!params || !params[0]) {
+                            return '数据加载中'
+                        }
+                        const data = params[0]
+                        return `${data.name} 日销量：${data.value} 台`
                     }
                 },
-                name: '销量（台）'
-            },
-            series: [
-                {
-                    name: '每日销量',
-                    type: 'bar',
-                    barWidth: '60%',
-                    data: salesData,
-                    label: {
-                        show: true,
-                        position: 'top',
-                        formatter: '{c} 台'
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: dateLabels,
+                    axisTick: {
+                        alignWithLabel: true
                     },
-                    itemStyle: {
-                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                            { offset: 0, color: '#83bff6' },
-                            { offset: 0.5, color: '#188df0' },
-                            { offset: 1, color: '#188df0' }
-                        ]),
-                        borderRadius: [4, 4, 0, 0] // 设置柱状图顶部圆角
+                    axisLabel: {
+                        rotate: 0
                     },
-                    emphasis: {
-                        itemStyle: {
-                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                                { offset: 0, color: '#2378f7' },
-                                { offset: 0.7, color: '#2378f7' },
-                                { offset: 1, color: '#83bff6' }
-                            ])
-                        },
+                    name: '日期'
+                },
+                yAxis: {
+                    type: 'value',
+                    minInterval: 1,
+                    splitLine: {
+                        lineStyle: {
+                            type: 'dashed'
+                        }
+                    },
+                    name: '销量（台）'
+                },
+                series: [
+                    {
+                        name: '每日销量',
+                        type: 'bar',
+                        barWidth: '60%',
+                        data: salesData,
                         label: {
                             show: true,
                             position: 'top',
-                            formatter: '{c} 台',
-                            fontSize: 14,
-                            fontWeight: 'bold',
-                            color: '#2378f7'
+                            formatter: '{c} 台'
+                        },
+                        itemStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: '#83bff6' },
+                                { offset: 0.5, color: '#188df0' },
+                                { offset: 1, color: '#188df0' }
+                            ]),
+                            borderRadius: [4, 4, 0, 0] // 设置柱状图顶部圆角
+                        },
+                        emphasis: {
+                            itemStyle: {
+                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                    { offset: 0, color: '#2378f7' },
+                                    { offset: 0.7, color: '#2378f7' },
+                                    { offset: 1, color: '#83bff6' }
+                                ])
+                            },
+                            label: {
+                                show: true,
+                                position: 'top',
+                                formatter: '{c} 台',
+                                fontSize: 14,
+                                fontWeight: 'bold',
+                                color: '#2378f7'
+                            }
                         }
                     }
+                ]
+            }
+            
+            console.log('柱状图配置:', option) // 调试日志
+            storeChart.value.setOption(option)
+        } catch (error) {
+            console.error('获取每日销量数据失败:', error)
+            // 隐藏加载动画
+            storeChart.value.hideLoading()
+            
+            // 显示错误提示
+            storeChart.value.setOption({
+                title: {
+                    text: '数据加载失败',
+                    left: 'center',
+                    top: 'center',
+                    textStyle: {
+                        color: '#999',
+                        fontSize: 16
+                    }
                 }
-            ]
-        })
+            })
+        }
     } catch (error) {
         console.error('初始化每日销量统计图表失败:', error)
-        ElMessage.warning({
-            message: '获取每日销量统计数据失败，已使用模拟数据',
-            type: 'warning'
-        })
     }
 }
 
 // 清理图表实例
 const disposeCharts = () => {
-    if (brandChart.value) {
-        brandChart.value.dispose()
-        brandChart.value = null
+    try {
+        if (brandChart.value && !brandChart.value.isDisposed()) {
+            brandChart.value.dispose()
+        }
+    } catch (error) {
+        console.error('清理品牌图表失败:', error)
     }
-    if (storeChart.value) {
-        storeChart.value.dispose()
-        storeChart.value = null
+    
+    try {
+        if (storeChart.value && !storeChart.value.isDisposed()) {
+            storeChart.value.dispose()
+        }
+    } catch (error) {
+        console.error('清理销量图表失败:', error)
     }
+    
+    brandChart.value = null
+    storeChart.value = null
 }
 
-// 监听窗口大小变化
-const handleResize = () => {
-    if (brandChart.value) {
-        brandChart.value.resize()
-    }
-    if (storeChart.value) {
-        storeChart.value.resize()
-    }
+// 添加窗口尺寸变化时的重绘处理
+const resizeHandler = () => {
+    setTimeout(() => {
+        if (brandChart.value) {
+            brandChart.value.resize()
+        }
+        if (storeChart.value) {
+            storeChart.value.resize()
+        }
+    }, 100)
 }
 
-onMounted(() => {
-    fetchDashboardData()
-    initBrandChart()
-    initStoreChart()
-    window.addEventListener('resize', handleResize)
+// 监听路由变化
+watch(() => route.fullPath, () => {
+  // 无论什么原因导航到仪表盘页面，都标记需要刷新
+  if (route.path === '/admin') {
+    console.log('监测到仪表盘页面路由切换，标记需要刷新')
+    needRefresh.value = true
+  }
+}, { immediate: true })
+
+// 组件被激活时（从缓存中恢复）
+onActivated(() => {
+  console.log('仪表盘页面被激活')
+  // 每次激活都刷新数据，确保数据最新
+  refreshAllData()
+})
+
+// 添加监听事件，响应菜单点击刷新事件
+const setupEventListeners = () => {
+  // 添加自定义事件监听器，当点击左侧菜单跳转到该页面时触发刷新
+  window.addEventListener('dashboard-refresh', refreshAllData)
+}
+
+// 移除监听事件
+const removeEventListeners = () => {
+  window.removeEventListener('dashboard-refresh', refreshAllData)
+}
+
+onMounted(async () => {
+  // 初次加载刷新数据
+  refreshAllData()
+  
+  // 监听窗口尺寸变化
+  window.addEventListener('resize', resizeHandler)
+  
+  // 设置事件监听器
+  setupEventListeners()
+  
+  // 添加自动重试机制
+  const retryTimer = setTimeout(() => {
+    const brandDom = document.getElementById('brandChart')
+    const storeDom = document.getElementById('storeChart')
+    
+    // 检查图表是否成功初始化
+    if (brandDom && (!brandChart.value || brandChart.value.isDisposed())) {
+      console.log('品牌图表需要重新初始化')
+      initBrandChart()
+    }
+    
+    if (storeDom && (!storeChart.value || storeChart.value.isDisposed())) {
+      console.log('销量图表需要重新初始化')
+      initStoreChart()
+    }
+  }, 1000)
+  
+  return () => {
+    clearTimeout(retryTimer)
+  }
 })
 
 onBeforeUnmount(() => {
-    // 在组件卸载前清理图表实例
-    disposeCharts()
-    window.removeEventListener('resize', handleResize)
+  // 在组件卸载前清理图表实例
+  disposeCharts()
+  window.removeEventListener('resize', resizeHandler)
+  removeEventListeners()
 })
 
 // 确保在组件被销毁时也清理图表实例
 onUnmounted(() => {
-    disposeCharts()
+  disposeCharts()
+  removeEventListeners()
 })
 </script>
 

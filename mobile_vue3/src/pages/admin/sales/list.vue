@@ -154,7 +154,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   Plus, 
@@ -303,6 +303,32 @@ const handleView = async (row) => {
 onMounted(async () => {
   await fetchStoreOptions()
   getData()
+  
+  // 添加全局事件监听，用于接收来自其他页面的刷新指令
+  window.addEventListener('reload-sales-data', handleReloadData)
+})
+
+// 组件卸载时移除事件监听
+onUnmounted(() => {
+  window.removeEventListener('reload-sales-data', handleReloadData)
+})
+
+// 处理数据刷新
+const handleReloadData = () => {
+  console.log('收到刷新销售数据指令')
+  // 重置到第一页并刷新数据
+  currentPage.value = 1
+  getData()
+}
+
+// 提供给外部调用的刷新方法
+const refreshSalesData = () => {
+  getData()
+}
+
+// 暴露方法供父组件调用
+defineExpose({
+  refreshSalesData
 })
 </script>
 

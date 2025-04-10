@@ -197,17 +197,14 @@ const initWebSocket = () => {
         ws.value.close();
     }
 
-    console.log('开始初始化 WebSocket 连接...');
-    console.log('当前用户 ID:', store.state.user.id);
+    // console.log('开始初始化 WebSocket 连接...');
+    // console.log('当前用户 ID:', store.state.user.id);
     
     const wsUrl = getWsUrl();
     console.log('准备连接到 WebSocket 地址:', wsUrl);
 
     try {
-        console.log('准备连接到 WebSocket 地址:', wsUrl);
-
         ws.value = new WebSocket(wsUrl);
-        console.log('ws', ws)
         // 添加连接超时处理
         const connectionTimeout = setTimeout(() => {
             if (ws.value && ws.value.readyState === WebSocket.CONNECTING) {
@@ -496,12 +493,26 @@ const handleMessageClick = (message) => {
     
     // 跳转到相应页面
     if (message.type === 'sale') {
-        router.push('/admin/sales/list')
+        goToSalesList()
     }
 }
 
 const goToSalesList = () => {
-    router.push('/admin/sales/list')
+    // 检查当前路由是否已经是销售记录页面
+    if (router.currentRoute.value.path === '/admin/sales/list') {
+        // 已经在销售记录页面，刷新数据
+        console.log('已在销售记录页面，刷新数据');
+        
+        // 通过事件总线触发刷新事件
+        window.dispatchEvent(new CustomEvent('reload-sales-data'));
+        
+        // 显示刷新提示
+        ElMessage.success('销售记录数据已刷新');
+    } else {
+        // 不在销售记录页面，跳转过去
+        console.log('跳转到销售记录页面');
+        router.push('/admin/sales/list');
+    }
 }
 
 const handleCommand = (command) => {

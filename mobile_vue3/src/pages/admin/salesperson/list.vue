@@ -44,7 +44,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, onActivated } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getSalespersonList, updateSalespersonStatus } from '@/api/admin/user'
 
@@ -142,9 +142,41 @@ const handleStatusChange = async (row) => {
     }
 }
 
+// 处理刷新数据
+const handleReloadData = () => {
+  console.log('收到刷新销售员数据指令')
+  // 重置到第一页并刷新数据
+  currentPage.value = 1
+  getData()
+}
+
 // 生命周期
 onMounted(() => {
   getData()
+  
+  // 添加全局事件监听，用于接收来自其他页面的刷新指令
+  window.addEventListener('salesperson-refresh', handleReloadData)
+})
+
+// 组件卸载时移除事件监听
+onUnmounted(() => {
+  window.removeEventListener('salesperson-refresh', handleReloadData)
+})
+
+// 从缓存恢复时触发
+onActivated(() => {
+  // 每次激活组件时刷新数据
+  getData()
+})
+
+// 提供给外部调用的刷新方法
+const refreshData = () => {
+  getData()
+}
+
+// 暴露方法供父组件调用
+defineExpose({
+  refreshData
 })
 </script>
 

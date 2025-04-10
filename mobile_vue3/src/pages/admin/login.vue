@@ -121,7 +121,7 @@ onBeforeUnmount(() => {
 }
 
 .logo {
-    height: 55px;
+    height: 58px;
 }
 
 .login-container {

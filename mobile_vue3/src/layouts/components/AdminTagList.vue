@@ -59,13 +59,30 @@ const handleClose = (e) => {
 const tabChange = (e) => {
     activeTab.value = e
     router.push(e)
+    
+    // 根据不同路由触发不同刷新事件
+    if (e === '/admin') {
+        // 触发仪表盘刷新事件
+        window.dispatchEvent(new CustomEvent('dashboard-refresh'))
+    } else if (e === '/admin/sales/list') {
+        // 触发销售记录刷新事件
+        window.dispatchEvent(new CustomEvent('reload-sales-data'))
+    } else if (e === '/admin/salesperson/list') {
+        // 触发销售员管理刷新事件
+        window.dispatchEvent(new CustomEvent('salesperson-refresh'))
+    } else if (e === '/admin/phone/list') {
+        // 触发手机型号刷新事件
+        window.dispatchEvent(new CustomEvent('phone-refresh'))
+    } else if (e === '/admin/manager/list') {
+        // 触发管理员账号刷新事件
+        window.dispatchEvent(new CustomEvent('manager-refresh'))
+    }
 }
 
 // 初始化 tab
 function initTabList() {
     let tabs = cookie.get('tabList')
     if (tabs) {
-        console.log(tabs)
         tabList.value = tabs
     }
 }
