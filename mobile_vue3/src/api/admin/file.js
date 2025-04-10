@@ -5,7 +5,7 @@ import axios from "@/axios"
  * @param {FormData} formData - 包含图片文件的FormData对象
  */
 export function uploadImage(formData) {
-    return axios.post('/admin/upload/image', formData, {
+    return axios.post('/api/admin/upload/image', formData, {
         headers: {
             'Content-Type': 'multipart/form-data'
         }

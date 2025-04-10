@@ -219,35 +219,6 @@ const fetchStoreOptions = async () => {
   }
 }
 
-// 手机品牌选项
-const phoneBrandOptions = ref([
-  { id: 1, name: 'Apple' },
-  { id: 2, name: 'HUAWEI' },
-  { id: 3, name: 'Xiaomi' },
-  { id: 4, name: 'OPPO' },
-  { id: 5, name: 'vivo' },
-  { id: 6, name: 'Samsung' }
-])
-
-// 手机型号选项，增加brandId字段关联品牌
-const phoneModelOptions = ref([
-  { id: 1, name: 'iPhone 13', brandId: 1 },
-  { id: 2, name: 'iPhone 14', brandId: 1 },
-  { id: 3, name: 'iPhone 15', brandId: 1 },
-  { id: 4, name: 'HUAWEI P50', brandId: 2 },
-  { id: 5, name: 'HUAWEI P60', brandId: 2 },
-  { id: 6, name: 'HUAWEI Mate 60', brandId: 2 },
-  { id: 7, name: 'Xiaomi 13', brandId: 3 },
-  { id: 8, name: 'Xiaomi 14', brandId: 3 },
-  { id: 9, name: 'Redmi K60', brandId: 3 },
-  { id: 10, name: 'OPPO Find X6', brandId: 4 },
-  { id: 11, name: 'OPPO Reno 10', brandId: 4 },
-  { id: 12, name: 'vivo X90', brandId: 5 },
-  { id: 13, name: 'vivo X100', brandId: 5 },
-  { id: 14, name: 'Samsung S23', brandId: 6 },
-  { id: 15, name: 'Samsung S24', brandId: 6 }
-])
-
 // 获取数据
 const getData = async (p = null) => {
   if (typeof p === 'number') {
@@ -301,7 +272,7 @@ const handleView = async (row) => {
 
 // 生命周期
 onMounted(async () => {
-  await fetchStoreOptions()
+  // await fetchStoreOptions()
   getData()
   
   // 添加全局事件监听，用于接收来自其他页面的刷新指令

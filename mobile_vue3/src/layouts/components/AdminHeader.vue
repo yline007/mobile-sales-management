@@ -153,15 +153,7 @@ const defaultAvatar = '/static/avatar.png'
 
 // 获取WebSocket服务器地址
 const getWsUrl = () => {
-  console.log('window.globalConfig:', window.globalConfig); // 打印整个配置对象
-  if (window.globalConfig && window.globalConfig.wsUrl) {
-    console.log('使用配置文件中的 WebSocket 地址:', window.globalConfig.wsUrl);
-    return window.globalConfig.wsUrl;
-  }
-  // 如果配置未加载，使用默认值
-  const defaultUrl = 'ws://' + window.location.hostname + ':8085';
-  console.log('使用默认的 WebSocket 地址:', defaultUrl);
-  return defaultUrl;
+    return import.meta.env.VITE_WS_URL
 }
 
 // 获取管理员信息

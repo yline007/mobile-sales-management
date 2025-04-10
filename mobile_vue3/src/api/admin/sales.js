@@ -10,7 +10,7 @@ import axios from "@/axios"
  * @param {string} end_date - 结束日期
  */
 export function getSalesList(page = 1, limit = 10, { keyword = '', store_id = null, start_date = '', end_date = '' } = {}) {
-    return axios.get('/admin/sales', {
+    return axios.get('/api/admin/sales', {
         params: {
             page,
             limit,
@@ -27,7 +27,7 @@ export function getSalesList(page = 1, limit = 10, { keyword = '', store_id = nu
  * @param {object} data - 销售记录数据
  */
 export function createSales(data) {
-    return axios.post('/admin/sales', data)
+    return axios.post('/api/admin/sales', data)
 }
 
 /**
@@ -36,7 +36,7 @@ export function createSales(data) {
  * @param {object} data - 销售记录数据
  */
 export function updateSales(id, data) {
-    return axios.put(`/admin/sales/${id}`, data)
+    return axios.put(`/api/admin/sales/${id}`, data)
 }
 
 /**
@@ -44,7 +44,7 @@ export function updateSales(id, data) {
  * @param {number} id - 记录ID
  */
 export function deleteSales(id) {
-    return axios.delete(`/admin/sales/${id}`)
+    return axios.delete(`/api/admin/sales/${id}`)
 }
 
 /**
@@ -52,7 +52,7 @@ export function deleteSales(id) {
  * @param {number} id - 记录ID
  */
 export function getSalesDetail(id) {
-    return axios.get(`/admin/sales/${id}`)
+    return axios.get(`/api/admin/sales/${id}`)
 }
 
 export default {

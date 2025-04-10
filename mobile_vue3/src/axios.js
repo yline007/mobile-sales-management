@@ -3,14 +3,13 @@ import { notification, showMessage } from '@/composables/util'
 import { getToken } from '@/composables/auth'
 import store from "@/store";
 import { refreshToken } from '@/api/admin/user'
-import { Console } from "windicss/utils";
 
 // 添加调试日志
-console.log('API Base URL:', import.meta.env.VITE_APP_BASE_API)
-console.log('Global Config:', window.globalConfig)
+console.log('env Config:', import.meta.env)
 
 const instance = axios.create({
-    baseURL: window.globalConfig?.baseApi || import.meta.env.VITE_APP_BASE_API,
+    // 优先使用运行时配置的baseApi，如果没有则使用环境变量中的配置
+    baseURL: window.globalConfig?.baseApi || import.meta.env.VITE_API_BASE_URL,
     timeout: 7000,
     headers: {
         'Content-Type': 'application/json'
@@ -37,7 +36,7 @@ instance.interceptors.request.use(function (config) {
     if (token) {
         config.headers['Authorization'] = 'Bearer ' + token
     }
-
+    
     return config;
 }, function (error) {
     // 对请求错误做些什么

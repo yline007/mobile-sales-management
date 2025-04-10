@@ -124,8 +124,6 @@ const storeChart = ref(null)
 
 // 刷新所有数据的函数
 const refreshAllData = async () => {
-  console.log('开始刷新仪表盘数据...')
-  
   // 显示加载状态
   const loadingInstance = ElLoading.service({
     lock: true,
@@ -144,7 +142,6 @@ const refreshAllData = async () => {
     // 刷新完成
     needRefresh.value = false
   } catch (error) {
-    console.error('刷新数据失败:', error)
     ElMessage.error('刷新数据失败，请稍后再试')
   } finally {
     // 关闭加载状态
@@ -164,7 +161,6 @@ const fetchDashboardData = async () => {
             monthSalesAmount.value = res.data.month_sales_amount || 0
         } else {
             // API调用失败时的处理
-            console.warn('获取仪表盘数据失败')
             todaySalesCount.value = 0
             storeTotalCount.value = 0
             salespersonTotalCount.value = 0
@@ -176,7 +172,6 @@ const fetchDashboardData = async () => {
             })
         }
     } catch (error) {
-        console.error('获取仪表盘数据失败:', error)
         // 发生错误时处理
         todaySalesCount.value = 0
         storeTotalCount.value = 0
@@ -315,7 +310,6 @@ const initBrandChart = async () => {
             
             brandChart.value.setOption(option)
         } catch (error) {
-            console.error('获取品牌数据失败:', error)
             // 隐藏加载动画
             brandChart.value.hideLoading()
             
@@ -363,8 +357,6 @@ const initStoreChart = async () => {
             let salesData = []
             let dateLabels = []
             
-            console.log('每日销量API响应:', res) // 调试日志
-            
             // 适配新的数据结构：检查res.data.list
             if (res.code === 0 && res.data) {
                 // 获取正确的数据列表
@@ -375,8 +367,6 @@ const initStoreChart = async () => {
                     const sortedData = [...dataList].sort((a, b) => {
                         return new Date(a.date) - new Date(b.date)
                     })
-                    
-                    console.log('排序后的销量数据:', sortedData) // 调试日志
                     
                     // 处理API返回的数据，适配不同的字段名
                     salesData = sortedData.map(item => {
@@ -398,11 +388,7 @@ const initStoreChart = async () => {
                         }
                         return dateStr
                     })
-                    
-                    console.log('处理后的销量数据:', salesData) // 调试日志
-                    console.log('处理后的日期标签:', dateLabels) // 调试日志
                 } else {
-                    console.log('API返回的数据列表为空')
                     dateLabels = ['暂无数据']
                     salesData = [0]
                 }
@@ -410,14 +396,12 @@ const initStoreChart = async () => {
                 // 数据为空的情况
                 dateLabels = ['暂无数据']
                 salesData = [0]
-                console.log('API返回数据为空或格式不正确')
             }
             
             // 确保数据不为空
             if (!salesData || salesData.length === 0 || !dateLabels || dateLabels.length === 0) {
                 dateLabels = ['暂无数据']
                 salesData = [0]
-                console.log('数据处理后为空，使用默认值')
             }
             
             // 隐藏加载动画
@@ -504,10 +488,8 @@ const initStoreChart = async () => {
                 ]
             }
             
-            console.log('柱状图配置:', option) // 调试日志
             storeChart.value.setOption(option)
         } catch (error) {
-            console.error('获取每日销量数据失败:', error)
             // 隐藏加载动画
             storeChart.value.hideLoading()
             
@@ -567,14 +549,12 @@ const resizeHandler = () => {
 watch(() => route.fullPath, () => {
   // 无论什么原因导航到仪表盘页面，都标记需要刷新
   if (route.path === '/admin') {
-    console.log('监测到仪表盘页面路由切换，标记需要刷新')
     needRefresh.value = true
   }
 }, { immediate: true })
 
 // 组件被激活时（从缓存中恢复）
 onActivated(() => {
-  console.log('仪表盘页面被激活')
   // 每次激活都刷新数据，确保数据最新
   refreshAllData()
 })
@@ -607,12 +587,10 @@ onMounted(async () => {
     
     // 检查图表是否成功初始化
     if (brandDom && (!brandChart.value || brandChart.value.isDisposed())) {
-      console.log('品牌图表需要重新初始化')
       initBrandChart()
     }
     
     if (storeDom && (!storeChart.value || storeChart.value.isDisposed())) {
-      console.log('销量图表需要重新初始化')
       initStoreChart()
     }
   }, 1000)

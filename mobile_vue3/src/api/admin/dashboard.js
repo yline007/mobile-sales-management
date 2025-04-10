@@ -1,5 +1,4 @@
 import axios from "@/axios"
-import qs from 'qs'
 
 /**
  * 获取仪表盘统计数据
@@ -10,19 +9,19 @@ import qs from 'qs'
  * - month_sales_amount: 月销售额
  */
 export function getDashboardStatistics() {
-    return axios.get("/admin/dashboard/statistics")
+    return axios.get("/api/admin/dashboard/statistics")
 }
 
 /**
  * 获取品牌销量统计
  */
 export function getBrandStatistics() {
-    return axios.get("/admin/dashboard/brand_statistics")
+    return axios.get("/api/admin/dashboard/brand_statistics")
 }
 
 /**
  * 获取每日销量统计
  */
 export function getDailySalesStatistics() {
-    return axios.get("/admin/dashboard/daily_sales")
+    return axios.get("/api/admin/dashboard/daily_sales")
 }

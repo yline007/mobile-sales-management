@@ -8,7 +8,7 @@ import axios from "@/axios"
  * @param {number} store_id - 门店ID
  */
 export function getSalespersonList(page = 1, limit = 10, keyword = '', store_id = null) {
-    return axios.get('/admin/salespersons', {
+    return axios.get('/api/admin/salespersons', {
         params: {
             page,
             limit,
@@ -23,7 +23,7 @@ export function getSalespersonList(page = 1, limit = 10, keyword = '', store_id 
  * @param {object} data - 销售员数据
  */
 export function createSalesperson(data) {
-    return axios.post('/admin/salesperson', data)
+    return axios.post('/api/admin/salesperson', data)
 }
 
 /**
@@ -32,7 +32,7 @@ export function createSalesperson(data) {
  * @param {object} data - 销售员数据
  */
 export function updateSalesperson(id, data) {
-    return axios.put(`/admin/salesperson/${id}`, data)
+    return axios.put(`/api/admin/salesperson/${id}`, data)
 }
 
 /**
@@ -40,7 +40,7 @@ export function updateSalesperson(id, data) {
  * @param {number} id - 销售员ID
  */
 export function deleteSalesperson(id) {
-    return axios.delete(`/admin/salesperson/${id}`)
+    return axios.delete(`/api/admin/salesperson/${id}`)
 }
 
 /**
@@ -49,7 +49,7 @@ export function deleteSalesperson(id) {
  * @param {number} status - 状态：1-启用 0-禁用
  */
 export function updateSalespersonStatus(id, status) {
-    return axios.put(`/admin/salesperson/${id}/status`, { status })
+    return axios.put(`/api/admin/salesperson/${id}/status`, { status })
 }
 
 export default {

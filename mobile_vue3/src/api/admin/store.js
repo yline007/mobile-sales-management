@@ -7,7 +7,7 @@ import axios from "@/axios"
  * @param {string} keyword - 搜索关键词
  */
 export function getStoreList(page = 1, limit = 10, keyword = '') {
-    return axios.get('/admin/stores', {
+    return axios.get('/api/admin/stores', {
         params: {
             page,
             limit,
@@ -21,7 +21,7 @@ export function getStoreList(page = 1, limit = 10, keyword = '') {
  * @param {object} data - 门店数据
  */
 export function createStore(data) {
-    return axios.post('/admin/store', data)
+    return axios.post('/api/admin/store', data)
 }
 
 /**
@@ -30,7 +30,7 @@ export function createStore(data) {
  * @param {object} data - 门店数据
  */
 export function updateStore(id, data) {
-    return axios.put(`/admin/store/${id}`, data)
+    return axios.put(`/api/admin/store/${id}`, data)
 }
 
 /**
@@ -38,7 +38,7 @@ export function updateStore(id, data) {
  * @param {number} id - 门店ID
  */
 export function deleteStore(id) {
-    return axios.delete(`/admin/store/${id}`)
+    return axios.delete(`/api/admin/store/${id}`)
 }
 
 /**
@@ -47,7 +47,7 @@ export function deleteStore(id) {
  * @param {number} status - 状态：1-启用 0-禁用
  */
 export function updateStoreStatus(id, status) {
-    return axios.put(`/admin/store/${id}/status`, { status })
+    return axios.put(`/api/admin/store/${id}/status`, { status })
 }
 
 export default {

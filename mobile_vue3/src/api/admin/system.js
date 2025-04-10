@@ -4,7 +4,7 @@ import axios from "@/axios"
  * 获取系统设置
  */
 export function getSystemSettings() {
-    return axios.get('/admin/settings')
+    return axios.get('/api/admin/settings')
 }
 
 /**
@@ -12,7 +12,7 @@ export function getSystemSettings() {
  * @param {object} data - 设置数据(键值对对象)
  */
 export function updateSystemSettings(data) {
-    return axios.post('/admin/settings', data)
+    return axios.post('/api/admin/settings', data)
 }
 
 export default {

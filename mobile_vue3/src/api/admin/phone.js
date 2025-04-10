@@ -10,7 +10,7 @@ import axios from "@/axios"
  * - list: 品牌列表数组
  */
 export function getPhoneBrandList(page = 1, limit = 10, keyword = '') {
-    return axios.get('/admin/phone_brands', {
+    return axios.get('/api/admin/phone_brands', {
         params: {
             page,
             limit,
@@ -37,7 +37,7 @@ export function getPhoneBrandList(page = 1, limit = 10, keyword = '') {
  *   - description: 描述
  */
 export function getPhoneModelList(page = 1, limit = 10, keyword = '', brand_id = null) {
-    return axios.get('/admin/phone_models', {
+    return axios.get('/api/admin/phone_models', {
         params: {
             page,
             limit,
@@ -52,7 +52,7 @@ export function getPhoneModelList(page = 1, limit = 10, keyword = '', brand_id =
  * @param {object} data - 型号数据
  */
 export function createPhoneModel(data) {
-    return axios.post('/admin/phone_model', data)
+    return axios.post('/api/admin/phone_model', data)
 }
 
 /**
@@ -61,7 +61,7 @@ export function createPhoneModel(data) {
  * @param {object} data - 型号数据
  */
 export function updatePhoneModel(id, data) {
-    return axios.put(`/admin/phone_model/${id}`, data)
+    return axios.put(`/api/admin/phone_model/${id}`, data)
 }
 
 /**
@@ -69,7 +69,7 @@ export function updatePhoneModel(id, data) {
  * @param {number} id - 型号ID
  */
 export function deletePhoneModel(id) {
-    return axios.delete(`/admin/phone_model/${id}`)
+    return axios.delete(`/api/admin/phone_model/${id}`)
 }
 
 /**
@@ -78,7 +78,7 @@ export function deletePhoneModel(id) {
  * @param {number} status - 状态：1-启用 0-禁用
  */
 export function updatePhoneModelStatus(id, status) {
-    return axios.put(`/admin/phone_model/${id}/status`, { status })
+    return axios.put(`/api/admin/phone_model/${id}/status`, { status })
 }
 
 export default {
