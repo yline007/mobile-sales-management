@@ -46,7 +46,7 @@ router.beforeEach(async (to, from, next) => {
 
 router.afterEach((to, from) => {
     // 设置页面标题
-    let title = (to.meta.title ? to.meta.title : '') + ' - 手机销售记录管理系统'
+    let title = (to.meta.title ? to.meta.title : '') + ' - 终端销售出库管理系统'
     document.title = title
 
     hidePageLoading()

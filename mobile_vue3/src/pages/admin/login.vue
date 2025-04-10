@@ -19,6 +19,11 @@
                 </el-form-item>
             </el-form>
         </div>
+        
+        <!-- 添加页脚组件 -->
+        <div class="login-footer-wrapper">
+            <AdminFooter />
+        </div>
     </div>
 </template>
 
@@ -29,6 +34,7 @@ import { showMessage } from '@/composables/util'
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import { setToken } from '@/composables/auth'
+import AdminFooter from '@/layouts/components/AdminFooter.vue' // 导入页脚组件
 
 const router = useRouter()
 const store = useStore()
@@ -103,6 +109,7 @@ onBeforeUnmount(() => {
     background-size: cover;
     background-position: center;
     padding-right: 20%;
+    position: relative; /* 为页脚绝对定位提供基准 */
 }
 
 .header {
@@ -147,5 +154,14 @@ onBeforeUnmount(() => {
 .login-btn {
     width: 100%;
 }
+
+.login-footer-wrapper {
+    position: fixed; /* 改为 fixed 实现固定定位 */
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #fff; /* 添加白色背景 */
+    z-index: 10; /* 增加 z-index 确保在其他内容之上 */
+    box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.08); /* 可选：添加顶部阴影 */
+}
 </style>
-  

@@ -1,7 +1,7 @@
 <template>
     <div class="meun shadow-md fixed bg-light-50 transition-all duration-300" :style="{ width: $store.state.menuWidth }">
         <div class="flex items-center justify-center h-[64px]">
-            <div v-if="$store.state.menuWidth == '250px'" class="text-white text-xl font-bold">手机销售记录管理</div>
+            <div v-if="$store.state.menuWidth == '250px'" class="text-white text-xl font-bold">终端销售出库管理系统</div>
             <div v-else class="text-white text-xl font-bold">销售</div>
         </div>
 
