@@ -1,92 +1,161 @@
-# 移动销售系统
+# 手机销售记录管理系统 - 移动端APP
 
-基于 uni-app + Vue3 + TypeScript 开发的移动销售记录管理系统。
+基于 uni-app + Vue 3 + TypeScript 开发的手机销售记录管理系统移动端应用。
 
-## 项目特点
+## 技术栈
 
-- 跨平台：一套代码，多端运行（iOS、Android、H5、小程序等）
-- 技术栈：Vue3 + TypeScript + Pinia + uni-ui
-- 功能模块：用户管理、销售记录、数据统计等
+- uni-app - 跨平台应用开发框架
+- Vue 3 - 渐进式 JavaScript 框架
+- TypeScript - JavaScript 的超集
+- Vite - 下一代前端开发构建工具
+- uni-ui - uni-app 扩展组件库
+- Sass - CSS 预处理器
+
+## 开发环境要求
+
+- Node.js >= 16
+- npm >= 8
+- HBuilderX（推荐）
+
+## 安装
+
+```bash
+# 克隆项目
+git clone [项目地址]
+
+# 进入项目目录
+cd mobile_uniapp
+
+# 安装依赖
+npm install
+```
+
+## 开发
+
+```bash
+# 启动开发服务器
+npm run dev
+
+# 开发不同平台
+npm run dev:h5          # H5
+npm run dev:mp-weixin   # 微信小程序
+npm run dev:app         # APP
+```
+
+## 构建
+
+```bash
+# 构建H5版本
+npm run build:h5
+
+# 构建微信小程序版本
+npm run build:mp-weixin
+
+# 构建APP版本（需要HBuilderX）
+npm run build:app
+```
 
 ## 目录结构
 
 ```
-mobile_project/
-├── mobile_uniapp/           # uni-app项目目录
-│   ├── src/                 # 源代码
-│   │   ├── api/            # API接口
-│   │   ├── components/     # 组件
-│   │   ├── pages/          # 页面
-│   │   ├── static/         # 静态资源
-│   │   ├── store/          # 状态管理
-│   │   ├── utils/          # 工具函数
-│   │   ├── App.vue         # 应用入口
-│   │   ├── main.ts         # 主入口
-│   │   ├── manifest.json   # 配置文件
-│   │   └── pages.json      # 页面配置
-│   ├── package.json        # 依赖配置
-│   └── tsconfig.json       # TypeScript配置
-└── README.md               # 项目说明
+mobile_uniapp
+├── src/             # 源代码
+│   ├── api/         # API接口
+│   ├── components/  # 公共组件
+│   ├── pages/       # 页面文件
+│   ├── static/      # 静态资源
+│   ├── store/       # 状态管理
+│   ├── styles/      # 样式文件
+│   └── utils/       # 工具函数
+├── public/          # 公共文件
+├── dist/           # 打包文件
+├── index.html      # 入口HTML
+├── package.json    # 项目配置
+├── vite.config.ts  # Vite配置
+└── tsconfig.json   # TypeScript配置
 ```
 
-## 功能模块
+## 功能特性
 
-- **用户管理**：登录、注册、个人信息
-- **销售记录**：记录添加、查询、管理
-- **产品管理**：产品信息、库存管理
-- **统计分析**：销售数据统计、图表展示
+- 销售员登录/注销
+- 个人信息管理
+- 销售记录提交
+  - 门店选择
+  - 手机品牌/型号选择
+  - IMEI扫码录入
+  - 多图片上传
+  - 客户信息录入
+- 销售记录管理
+  - 今日销售记录查看
+  - 销售记录详情
+  - 记录状态跟踪
+- 实时通知
+  - 新销售提醒
+  - 系统消息通知
+  - 消息管理
 
-## 安装与运行
+## 跨平台支持
 
-### 环境要求
+- H5
+- 微信小程序
+- Android APP
+- iOS APP
 
-- Node.js 14.0+
-- HBuilderX
+## 部署说明
 
-### 安装依赖
+### H5版本部署
 
+1. 构建项目
 ```bash
-cd mobile_uniapp
-npm install
-```
-
-### 运行项目
-
-```bash
-# 运行到H5
-npm run dev:h5
-
-# 运行到微信小程序
-npm run dev:mp-weixin
-```
-
-### 构建项目
-
-```bash
-# 构建H5
 npm run build:h5
+```
 
-# 构建微信小程序
+2. Nginx配置示例
+```nginx
+server {
+    listen 80;
+    server_name m.your-domain.com;
+
+    location / {
+        root /path/to/dist/build/h5;
+        index index.html;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # 配置文件路径
+    location /config {
+        alias /path/to/config;
+    }
+}
+```
+
+### 小程序部署
+1. 构建小程序版本
+```bash
 npm run build:mp-weixin
 ```
+2. 使用微信开发者工具导入 dist/build/mp-weixin 目录
+3. 提交审核并发布
 
-## 主要依赖
+### APP打包
+1. 使用HBuilderX导入项目
+2. 配置应用标识等信息
+3. 执行打包操作（云打包或本地打包）
 
-- Vue 3
-- uni-app
-- TypeScript
-- Pinia
-- uni-ui
-- dayjs
-- lodash-es
+## 注意事项
 
-## 开发规范
+1. 开发时注意配置 config.js 中的接口地址
+2. 生产环境部署时确保配置文件放置正确
+3. 注意小程序相关配置的合规性
+4. APP打包时注意签名证书的配置
 
-- 遵循 Vue3 组合式 API 的使用规范
-- TypeScript 类型定义规范
-- 组件化开发，提高代码复用性
-- 统一的接口请求封装和错误处理
+## 兼容性支持
 
-## 版本信息
+- Android 5.0+
+- iOS 10.0+
+- 微信 7.0+
+- 主流浏览器最新版
 
-当前版本：v1.0.0
+## 许可证
+
+[MIT License](LICENSE)

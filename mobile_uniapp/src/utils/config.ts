@@ -44,7 +44,7 @@ export function getApiBaseUrl(): string {
  * 获取WebSocket地址
  */
 export function getWsUrl(): string {
-  return getConfig('wsUrl', 'ws://localhost:8082');
+  return getConfig('wsUrl', 'ws://localhost:2345');
 }
 
 export default {

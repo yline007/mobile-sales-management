@@ -96,9 +96,18 @@ import { ref, reactive, onMounted, computed } from 'vue';
 import { onShow, onLoad } from '@dcloudio/uni-app';
 import { isLoggedIn } from '@/utils/auth';
 import { submitRecord, type SalesRecordSubmitData } from '@/api/record';
-import { getStoreList, type Store, type ApiResponse } from '@/api/store';
+import { getStoreList, type Store } from '@/api/store';
 import { getBrandList, getModelList, type PhoneBrand, type PhoneModel } from '@/api/phone';
 import { BASE_URL } from '@/utils/request';
+import { ApiResponse } from '@/api/types';
+
+// 图片压缩配置
+const compressConfig = {
+  maxWidth: 1280,  // 最大宽度
+  maxHeight: 1280, // 最大高度
+  quality: 0.8,    // 压缩质量
+  maxSize: 1024 * 1024  // 1MB以上的图片进行压缩
+};
 
 // 是否显示门店选择器
 const showStorePicker = ref(true);
@@ -205,7 +214,7 @@ const handleBrandChange = async (e: any) => {
   formData.phone_brand_name = selectedBrand.name;
   formData.phone_model_id = 0;
   formData.phone_model_name = ''; // 重置手机型号
-  showModelSelect.value = true;
+  showModelSelect.value = false;
   
   // 加载该品牌的手机型号
   await loadPhoneModels(selectedBrand.id);
@@ -235,28 +244,150 @@ const scanSerialNumber = () => {
   });
 };
 
+// 压缩图片函数
+const compressImage = (tempFilePath: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    // #ifdef H5
+    if (tempFilePath.startsWith('blob:')) {
+      // H5环境使用canvas压缩
+      fetch(tempFilePath)
+        .then(response => response.blob())
+        .then(blob => {
+          // 检查文件大小，小于阈值不压缩
+          if (blob.size <= compressConfig.maxSize) {
+            console.log('图片小于阈值，不压缩', blob.size);
+            resolve(tempFilePath);
+            return;
+          }
+          
+          const img = new Image();
+          img.src = tempFilePath;
+          img.onload = () => {
+            // 计算压缩后的尺寸
+            let width = img.width;
+            let height = img.height;
+            
+            if (width > compressConfig.maxWidth || height > compressConfig.maxHeight) {
+              const ratio = Math.min(
+                compressConfig.maxWidth / width,
+                compressConfig.maxHeight / height
+              );
+              width = Math.floor(width * ratio);
+              height = Math.floor(height * ratio);
+            }
+            
+            // 创建canvas并绘制图片
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, width, height);
+            
+            // 转换为Blob
+            canvas.toBlob((compressedBlob) => {
+              if (compressedBlob) {
+                console.log('压缩前大小:', blob.size, '压缩后大小:', compressedBlob.size);
+                // 创建新的Blob URL
+                const compressedUrl = URL.createObjectURL(compressedBlob);
+                resolve(compressedUrl);
+              } else {
+                // 压缩失败，使用原始图片
+                console.warn('压缩失败，使用原图');
+                resolve(tempFilePath);
+              }
+            }, 'image/jpeg', compressConfig.quality);
+          };
+          
+          img.onerror = () => {
+            console.error('图片加载失败');
+            resolve(tempFilePath);
+          };
+        })
+        .catch(err => {
+          console.error('压缩过程出错', err);
+          resolve(tempFilePath);
+        });
+      return;
+    }
+    // #endif
+    
+    // #ifdef MP
+    // 小程序环境使用uni.compressImage
+    uni.getFileInfo({
+      filePath: tempFilePath,
+      success: (res) => {
+        if (res.size <= compressConfig.maxSize) {
+          console.log('图片小于阈值，不压缩', res.size);
+          resolve(tempFilePath);
+          return;
+        }
+        
+        // 使用小程序API压缩图片
+        uni.compressImage({
+          src: tempFilePath,
+          quality: compressConfig.quality * 100, // 0-100的整数
+          success: (compressRes) => {
+            console.log('压缩成功，新路径:', compressRes.tempFilePath);
+            resolve(compressRes.tempFilePath);
+          },
+          fail: (err) => {
+            console.error('压缩失败', err);
+            resolve(tempFilePath); // 失败时使用原图
+          }
+        });
+      },
+      fail: () => {
+        // 无法获取文件信息，使用原图
+        resolve(tempFilePath);
+      }
+    });
+    // #endif
+    
+    // #ifndef MP || H5
+    // 其他环境暂不处理，直接返回原路径
+    resolve(tempFilePath);
+    // #endif
+  });
+};
+
 // 上传单张图片
 const uploadImage = async (tempFilePath: string) => {
   formData.uploadingCount++;
   
   try {
-    const uploadTask = uni.uploadFile({
-      url: `${BASE_URL}/api/salesperson/upload_images`,
-      filePath: tempFilePath,
-      name: 'images',
-      header: {
-        'Authorization': uni.getStorageSync('token'),
-        'Content-Type': 'multipart/form-data'
-      },
-      formData: {
-        type: 'sales_record'
-      },
-      success: (uploadRes) => {
-        try {
-          const result = JSON.parse(uploadRes.data);
+    // #ifdef H5
+    // H5环境下特殊处理blob URL
+    if (tempFilePath.startsWith('blob:')) {
+      console.log('H5环境下处理blob URL:', tempFilePath);
+      
+      // 创建FormData对象（使用不同的变量名避免冲突）
+      const formDataH5 = new FormData();
+      formDataH5.append('type', 'sales_record');
+      
+      try {
+        // 获取blob对象
+        const response = await fetch(tempFilePath);
+        const blob = await response.blob();
+        
+        // 添加到FormData，使用File对象包装blob
+        const file = new File([blob], 'image.png', { type: 'image/png' });
+        formDataH5.append('images', file);
+        
+        // 使用fetch API直接上传
+        const uploadResponse = await fetch(`${BASE_URL}/api/salesperson/upload_images`, {
+          method: 'POST',
+          headers: {
+            'Authorization': uni.getStorageSync('token')
+          },
+          body: formDataH5
+        });
+        
+        // 处理响应
+        if (uploadResponse.ok) {
+          const result = await uploadResponse.json();
           console.log('上传结果：', result);
+          
           if (result.code === 0) {
-            // 将新上传的图片URL添加到现有数组中，而不是替换
             const newUrls = result.data.urls.map((url: string) => `${BASE_URL}${url}`);
             formData.photo_url = [...formData.photo_url, ...newUrls];
             uni.showToast({
@@ -269,12 +400,111 @@ const uploadImage = async (tempFilePath: string) => {
               icon: 'none'
             });
           }
-        } catch (e) {
-          console.error('解析上传结果失败', e, uploadRes);
+        } else {
           uni.showToast({
-            title: '图片上传失败',
+            title: '图片上传失败: ' + uploadResponse.statusText,
             icon: 'none'
           });
+        }
+      } catch (error) {
+        console.error('H5环境处理blob失败:', error);
+        uni.showToast({
+          title: '图片上传失败',
+          icon: 'none'
+        });
+      } finally {
+        formData.uploadingCount--;
+      }
+      return;
+    }
+    // #endif
+    
+    // 小程序环境或H5非blob的情况
+    const uploadTask = uni.uploadFile({
+      url: `${BASE_URL}/api/salesperson/upload_images`,
+      filePath: tempFilePath,
+      name: 'images',
+      header: {
+        'Authorization': uni.getStorageSync('token')
+      },
+      formData: {
+        type: 'sales_record'
+      },
+      success: (uploadRes) => {
+        try {
+          // 修复小程序端响应解析问题
+          let result;
+          if (typeof uploadRes.data === 'string') {
+            // 尝试解析JSON字符串
+            try {
+              result = JSON.parse(uploadRes.data);
+            } catch (parseError) {
+              console.error('JSON解析失败:', parseError, uploadRes.data);
+              // 检查是否是HTML响应
+              if (uploadRes.data.includes('<!DOCTYPE html>')) {
+                uni.showToast({
+                  title: '服务器返回了HTML页面，请检查后端配置',
+                  icon: 'none',
+                  duration: 3000
+                });
+                return;
+              }
+              
+              // 返回的不是有效的JSON，尝试其他方式处理
+              result = { code: 500, msg: '响应格式错误', data: {} };
+            }
+          } else {
+            // 已经是对象
+            result = uploadRes.data;
+          }
+          
+          console.log('上传结果：', result);
+          
+          // 检查是否状态码为200但data不是JSON对象情况
+          if (uploadRes.statusCode === 200 && result.code === undefined) {
+            // 可能返回了一个成功状态但没有正确的JSON格式
+            if (formData.photo_url.length < 6) {
+              // 直接使用临时路径作为预览
+              formData.photo_url.push(tempFilePath);
+              uni.showToast({
+                title: '上传成功(本地预览)',
+                icon: 'success'
+              });
+            }
+            return;
+          }
+          
+          if (result.code === 0) {
+            // 将新上传的图片URL添加到现有数组中，而不是替换
+            if (result.data && result.data.urls) {
+              const newUrls = result.data.urls.map((url: string) => `${BASE_URL}${url}`);
+              formData.photo_url = [...formData.photo_url, ...newUrls];
+            }
+            uni.showToast({
+              title: '上传成功',
+              icon: 'success'
+            });
+          } else {
+            uni.showToast({
+              title: result.msg || '图片上传失败',
+              icon: 'none'
+            });
+          }
+        } catch (e) {
+          console.error('解析上传结果失败', e, uploadRes);
+          // 尝试使用本地路径
+          if (formData.photo_url.length < 6) {
+            formData.photo_url.push(tempFilePath);
+            uni.showToast({
+              title: '上传成功(本地预览)',
+              icon: 'success'
+            });
+          } else {
+            uni.showToast({
+              title: '图片上传失败',
+              icon: 'none'
+            });
+          }
         }
       },
       fail: (error) => {
@@ -325,10 +555,17 @@ const chooseImage = () => {
         const tempFilePaths = Array.from(res.tempFilePaths);
         console.log('准备上传的图片路径:', tempFilePaths);
         
-        // 选择完图片后立即上传
-        tempFilePaths.forEach(tempFilePath => {
-          console.log('开始上传图片:', tempFilePath);
-          uploadImage(tempFilePath);
+        // 选择完图片后，先压缩再上传
+        tempFilePaths.forEach(async tempFilePath => {
+          try {
+            // 压缩图片
+            const compressedPath = await compressImage(tempFilePath);
+            console.log('开始上传压缩后的图片:', compressedPath);
+            uploadImage(compressedPath);
+          } catch (error) {
+            console.error('压缩过程出错，使用原图上传', error);
+            uploadImage(tempFilePath);
+          }
         });
       } else {
         console.error('没有选择任何图片或临时文件路径无效');
@@ -475,13 +712,13 @@ const validateForm = () => {
     return false;
   }
   
-  if (formData.photo_url.length === 0) {
-    uni.showToast({
-      title: '请至少上传一张手机照片',
-      icon: 'none'
-    });
-    return false;
-  }
+  // if (formData.photo_url.length === 0) {
+  //   uni.showToast({
+  //     title: '请至少上传一张手机照片',
+  //     icon: 'none'
+  //   });
+  //   return false;
+  // }
   
   return true;
 };

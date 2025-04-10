@@ -17,9 +17,11 @@ uni.addInterceptor('request', {
     options.timeout = 10000;
     
     // 设置请求头
+    const isFileUpload = options.files || options.filePath;
     options.header = {
       ...options.header,
-      'Content-Type': 'application/json'
+      // 如果是文件上传，不设置Content-Type，让浏览器自动设置
+      ...(isFileUpload ? {} : { 'Content-Type': 'application/json' })
     };
     
     // 添加token认证
@@ -35,7 +37,7 @@ uni.addInterceptor('request', {
   },
   success(res) {
     // 请求成功处理：检查状态码，统一错误处理
-    if (res.statusCode === 401 || (res.data && res.data.code === 1 && res.data.msg === 'Token验证失败，请重新登录')) {
+    if (res.statusCode === 401 || (res.data && res.data.code === 401)) {
       // 登录过期，清除登录信息并跳转到登录页
       uni.removeStorageSync('token');
       uni.removeStorageSync('userInfo');
@@ -45,7 +47,7 @@ uni.addInterceptor('request', {
         duration: 2000,
         success: () => {
           setTimeout(() => {
-            uni.redirectTo({
+            uni.reLaunch({
               url: '/pages/login/index'
             });
           }, 1000);

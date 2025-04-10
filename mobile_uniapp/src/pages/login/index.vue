@@ -2,7 +2,7 @@
   <view class="login-container">
     <view class="logo-container">
       <image class="logo-image" src="/static/images/china-mobile-5g.png" mode="aspectFit"></image>
-      <view class="logo-title">移动销售管理系统</view>
+      <view class="logo-title">终端销售出库管理</view>
     </view>
     
     <view class="form-area">
