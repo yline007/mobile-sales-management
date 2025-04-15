@@ -5,18 +5,19 @@
       <div class="flex items-center justify-between mb-4">
         <div></div>
         <div class="flex items-center">
-          <el-input v-model="searchForm.keyword" placeholder="请输入关键词" class="mr-2" clearable></el-input>
+          <el-input v-model="searchForm.keyword" placeholder="客户姓名/客户电话/IMEI" class="mr-2" clearable></el-input>
 
           <!-- 将范围选择器替换为两个单独的日期选择器 -->
           <div class="flex items-center mr-2">
-            <el-date-picker v-model="searchForm.startDate" type="date" placeholder="开始日期" class="mr-1"
+            <el-date-picker v-model="searchForm.startDate" type="date" placeholder="销售开始日期" class="mr-1"
               value-format="YYYY-MM-DD"></el-date-picker>
             <span class="mx-1">至</span>
-            <el-date-picker v-model="searchForm.endDate" type="date" placeholder="结束日期"
+            <el-date-picker v-model="searchForm.endDate" type="date" placeholder="销售结束日期"
               value-format="YYYY-MM-DD"></el-date-picker>
           </div>
           <el-button type="primary" @click="getData">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
+          <el-button type="success" @click="handleExport" :icon="Download">导出</el-button>
         </div>
       </div>
 
@@ -27,7 +28,7 @@
         <el-table-column label="销售人员" prop="salesperson"></el-table-column>
         <el-table-column label="手机品牌" prop="phone_brand" width="100"></el-table-column>
         <el-table-column label="手机型号" prop="phone_model" width="160"></el-table-column>
-        <el-table-column label="串码" prop="imei" width="200"></el-table-column>
+        <el-table-column label="IMEI" prop="imei" width="200"></el-table-column>
         <el-table-column label="客户姓名" prop="customer_name"></el-table-column>
         <el-table-column label="客户电话" prop="customer_phone"></el-table-column>
         <el-table-column label="销售时间" prop="create_time" width="180"></el-table-column>
@@ -163,9 +164,10 @@ import {
   Picture, 
   Document, 
   PictureFilled,
-  InfoFilled 
+  InfoFilled,
+  Download
 } from '@element-plus/icons-vue'
-import { getSalesList, getSalesDetail } from '@/api/admin/sales'
+import { getSalesList, getSalesDetail, exportSalesExcel } from '@/api/admin/sales'
 import { getStoreList } from '@/api/admin/store'
 
 // 控制搜索表单的显示与隐藏
@@ -265,6 +267,35 @@ const handleView = async (row) => {
   } catch (error) {
     console.error('获取销售记录详情失败:', error)
     ElMessage.error('获取销售记录详情失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 处理导出
+const handleExport = async () => {
+  try {
+    loading.value = true
+    const res = await exportSalesExcel({
+      keyword: searchForm.keyword,
+      store_id: searchForm.storeId,
+      start_date: searchForm.startDate,
+      end_date: searchForm.endDate
+    })
+    
+    // 创建下载链接
+    const blob = new Blob([res.data], { type: 'application/vnd.ms-excel' })
+    const link = document.createElement('a')
+    link.href = window.URL.createObjectURL(blob)
+    link.download = `销售记录_${new Date().toLocaleDateString()}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    
+    // ElMessage.success('导出成功')
+  } catch (error) {
+    console.error('导出失败:', error)
+    ElMessage.error('导出失败')
   } finally {
     loading.value = false
   }

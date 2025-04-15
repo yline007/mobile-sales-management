@@ -10,7 +10,7 @@ import axios from "@/axios"
  * @param {string} end_date - 结束日期
  */
 export function getSalesList(page = 1, limit = 10, { keyword = '', store_id = null, start_date = '', end_date = '' } = {}) {
-    return axios.get('/api/admin/sales', {
+    return axios.get('/api/admin/sales/list', {
         params: {
             page,
             limit,
@@ -52,7 +52,26 @@ export function deleteSales(id) {
  * @param {number} id - 记录ID
  */
 export function getSalesDetail(id) {
-    return axios.get(`/api/admin/sales/${id}`)
+    return axios.get(`/api/admin/sales/detail/${id}`)
+}
+
+/**
+ * 导出销售记录为Excel
+ * @param {string} keyword - 搜索关键词
+ * @param {number} store_id - 门店ID
+ * @param {string} start_date - 开始日期
+ * @param {string} end_date - 结束日期
+ */
+export function exportSalesExcel({ keyword = '', store_id = null, start_date = '', end_date = '' } = {}) {
+    return axios.get('/api/admin/sales/export', {
+        params: {
+            keyword,
+            store_id,
+            start_date,
+            end_date
+        },
+        responseType: 'blob'
+    })
 }
 
 export default {
@@ -60,5 +79,6 @@ export default {
     createSales,
     updateSales,
     deleteSales,
-    getSalesDetail
+    getSalesDetail,
+    exportSalesExcel
 } 
